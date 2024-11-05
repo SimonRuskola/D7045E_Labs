@@ -73,7 +73,7 @@ let  animating = false;  // is the animation running?
    colors are used when the user selects colored rather than red points.
    The positions of the points are updated for each frame of the animation. */
 
-const  POINT_COUNT = 100;
+const  POINT_COUNT = 10;
 const  pointCoords = new Float32Array( 2*POINT_COUNT );
 const  pointVelocities = new Float32Array( 2*POINT_COUNT );
 const  pointRandomColors = new Float32Array( 3*POINT_COUNT );
@@ -118,6 +118,41 @@ function updatePointCoordsForFrame() { // called during an animation, before eac
         else if (pointCoords[i]+size > canvas.height) {
             pointCoords[i] = canvas.height - (pointCoords[i]+size - canvas.height) - size;// move coord back onto canvas
             pointVelocities[i] = -Math.abs(pointVelocities[i]); // and make sure point is moving in negative direction
+        }
+    }
+
+    let  collision = document.getElementById("collisionCheckbox").checked;
+
+    if (collision){
+        checkPointCollision();
+    }
+}
+
+function checkPointCollision() {
+    let size = Number(document.getElementById("sizeChoice").value) / 2; // radius
+    for (let i = 0; i < POINT_COUNT; i++) {
+        for (let j = i + 1; j < POINT_COUNT; j++) {
+            let dx = pointCoords[2 * i] - pointCoords[2 * j];
+            let dy = pointCoords[2 * i + 1] - pointCoords[2 * j + 1];
+            let distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < 2 * size) {
+                // Simple collision response: swap velocities
+                let tempVx = pointVelocities[2 * i];
+                let tempVy = pointVelocities[2 * i + 1];
+                pointVelocities[2 * i] = pointVelocities[2 * j];
+                pointVelocities[2 * i + 1] = pointVelocities[2 * j + 1];
+                pointVelocities[2 * j] = tempVx;
+                pointVelocities[2 * j + 1] = tempVy;
+
+                // Move points apart to avoid overlap
+                let overlap = 2 * size - distance;
+                let moveX = (dx / distance) * overlap / 2;
+                let moveY = (dy / distance) * overlap / 2;
+                pointCoords[2 * i] += moveX;
+                pointCoords[2 * i + 1] += moveY;
+                pointCoords[2 * j] -= moveX;
+                pointCoords[2 * j + 1] -= moveY;
+            }
         }
     }
 }
@@ -269,6 +304,7 @@ function init() {
     }
     document.getElementById("animateCheckbox").checked = true;
     document.getElementById("colorCheckbox").checked = true;
+    document.getElementById("collisionCheckbox").checked = true;
     document.getElementById("sizeChoice").value = "32";
     document.getElementById("animateCheckbox").onchange = doAnimationCheckbox;
     document.getElementById("colorCheckbox").onchange = function() {
@@ -303,6 +339,7 @@ window.onload = init;  // Arrange for init() to be called after page has loaded.
         <option value="32">Medium</option>
         <option value="64">Large</option>
     </select></label>
+    <label><b><input type="checkbox" id="collisionCheckbox">&nbsp;Collision</b></label>
 </p>
 
 <div id="canvas-holder">
