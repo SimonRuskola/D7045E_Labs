@@ -30,6 +30,7 @@
 const  vertexShaderSource =
        "attribute vec2 a_coords;\n" +
        "attribute vec3 a_color;\n" +
+       
        "varying vec3 v_color;\n" +
        "uniform float u_pointsize;\n" +
        "uniform float u_width;\n" +
@@ -42,7 +43,7 @@ const  vertexShaderSource =
        "   gl_PointSize = u_pointsize;\n" +
        "}\n";
 
-const  fragmentShaderSource =
+       const fragmentShaderSource =
        "precision mediump float;\n" +
        "varying vec3 v_color;\n" +
        "void main() {\n" +
@@ -50,7 +51,11 @@ const  fragmentShaderSource =
        "   if ( distanceFromCenter >= 0.5 ) {\n" +
        "       discard;  // don't draw this pixel!\n" +
        "   }\n" +
-       "   gl_FragColor = vec4(v_color, 1.0);\n" +
+       "   if ( distanceFromCenter < 0.05 ) {\n" +  
+       "       gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);  // Color of the center dot (black in this case)\n" +
+       "   } else {\n" +
+       "       gl_FragColor = vec4(v_color, 1.0);\n" +
+       "   }\n" +
        "}\n";
 
 let  canvas;  // The canvas where WebGL draws.
@@ -166,7 +171,7 @@ function checkPointCollision() {
  */
 function draw() {
 
-    gl.clearColor(0,0,0,1);  // specify the color to be used for clearing
+    gl.clearColor(128 / 255, 128 / 255, 128 / 255, 1.0);  // specify the color to be used for clearing
     gl.clear(gl.COLOR_BUFFER_BIT);  // clear the canvas (to black)
     
     /* Get options from the user interface. */
@@ -188,7 +193,7 @@ function draw() {
     }
     else { // turn off vertexAttribArray and set a constant attribute color
         gl.disableVertexAttribArray(attributeColor);
-        gl.vertexAttrib3f(attributeColor, 1, 0, 0);
+        gl.vertexAttrib3f(attributeColor, 255, 215, 0);
     }
     
     /* Set the pointsize uniform variable */
@@ -250,6 +255,8 @@ function initGL() {
     gl.bindBuffer(gl.ARRAY_BUFFER, bufferColor);
     gl.bufferData(gl.ARRAY_BUFFER, pointRandomColors, gl.STREAM_DRAW);
     gl.vertexAttribPointer(attributeColor, 3, gl.FLOAT, false, 0, 0);
+
+    
 }
 
 /*------------ Animation support ------------*/
@@ -355,7 +362,7 @@ window.onload = init;  // Arrange for init() to be called after page has loaded.
 </p>
 
 <div id="canvas-holder">
-<canvas id="webglcanvas" width="800" height="600"></canvas>
+<canvas id="webglcanvas" width="800" height="600" ></canvas>
 </div>
 
 </body>
