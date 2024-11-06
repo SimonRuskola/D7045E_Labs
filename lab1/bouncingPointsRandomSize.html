@@ -84,7 +84,7 @@ let  animating = false;  // is the animation running?
    colors are used when the user selects colored rather than red points.
    The positions of the points are updated for each frame of the animation. */
 
-let  POINT_COUNT = 100; // The number of points.  This can be changed by the user.
+let  POINT_COUNT = 20; // The number of points.  This can be changed by the user.
 let  pointCoords = new Float32Array( 2*POINT_COUNT );
 let  pointVelocities = new Float32Array( 2*POINT_COUNT );
 let  pointRandomColors = new Float32Array( 3*POINT_COUNT );
@@ -201,10 +201,10 @@ function checkPointCollision() {
 
                 
                 // Move points apart to avoid overlap
-                pointCoords[2 * i] += pointVelocities[2 * i] * p;
-                pointCoords[2 * i + 1] += pointVelocities[2 * i + 1] * p;
-                pointCoords[2 * j] += pointVelocities[2 * j] * p;
-                pointCoords[2 * j + 1] += pointVelocities[2 * j + 1] * p;
+                pointCoords[2 * i] += pointVelocities[2 * i] * 2*p;
+                pointCoords[2 * i + 1] += pointVelocities[2 * i + 1] * 2*p;
+                pointCoords[2 * j] += pointVelocities[2 * j] * 2*p;
+                pointCoords[2 * j + 1] += pointVelocities[2 * j + 1] * 2*p;
             }
         }
     }
@@ -223,7 +223,6 @@ function draw() {
     /* Get options from the user interface. */
 
     let  randomColors = document.getElementById("colorCheckbox").checked;
-    let  pointsizes = pointSizes; 
     
     /* Set up values for the "coords" attribute, giving point's positions */
 
@@ -297,12 +296,10 @@ function initGL() {
     uniformWidth = gl.getUniformLocation(prog, "u_width");
     gl.uniform1f(uniformHeight, canvas.height);
     gl.uniform1f(uniformWidth, canvas.width);
+   
+    
     randomPointsize = gl.getAttribLocation(prog, "a_pointsize");
-    // Create a buffer for point sizes
-
-    let  a_pointsize = gl.getAttribLocation(prog, "a_pointsize");
     pointSizeBuffer = gl.createBuffer();
-
     
     
     createPointData();
@@ -310,10 +307,11 @@ function initGL() {
     gl.bufferData(gl.ARRAY_BUFFER, pointRandomColors, gl.STREAM_DRAW);
     gl.vertexAttribPointer(attributeColor, 3, gl.FLOAT, false, 0, 0);
     
+    // Create a buffer for point sizes
     gl.bindBuffer(gl.ARRAY_BUFFER, pointSizeBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, pointSizes, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(a_pointsize, 1, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_pointsize);
+    gl.vertexAttribPointer(randomPointsize, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(randomPointsize);
     
     
 }
@@ -408,7 +406,7 @@ window.onload = init;  // Arrange for init() to be called after page has loaded.
     <label><b><input type="checkbox" id="animateCheckbox">&nbsp;Animate</b></label>
     <label><b><input type="checkbox" id="colorCheckbox">&nbsp;Random&nbsp;Colors</b></label>
     <label><b><input type="checkbox" id="collisionCheckbox">&nbsp;Collision</b></label>
-    <label><b>Number of Points:</b>&nbsp;<input type="number" id="pointsInput" value="100"></label>
+    <label><b>Number of Points:</b>&nbsp;<input type="number" id="pointsInput" value="20"></label>
     <button onclick="changePoints()">Change Points</button>
 </p>
 
