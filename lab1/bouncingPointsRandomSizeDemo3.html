@@ -1,0 +1,425 @@
+
+<!DOCTYPE html>
+
+<!--
+   This page shows an animation of colored disks moving around
+   in a canvas, bouncing off the edges.  The program uses WebGL.
+   All of the points are drawn as single primitive of type POINTS.
+   The color is an attribute in the vertex shader, allowing
+   each point to be a different primitive.  The user can decide
+   whether to have randomly colored points or to make all the
+   points red.  The point size is a uniform variable, so all
+   the points are the same size.  However, the user can select
+   whether the size is large or small.
+-->
+
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Moving Disks in WebGL</title>
+<style>
+    label {
+        margin-left: 30px;
+    }
+</style>
+
+<script>
+
+"use strict";
+
+const  vertexShaderSource =
+       "attribute vec2 a_coords;\n" +
+       "attribute vec3 a_color;\n" +
+       "attribute float a_pointsize;\n" +
+       
+       "varying float v_pointsize;\n" +  // Pass point size to fragment shader
+       "varying vec3 v_color;\n" +
+       "uniform float u_width;\n" +
+       "uniform float u_height;\n" +
+       "void main() {\n" +
+       "   float x = -1.0 + 2.0*(a_coords.x / u_width);\n" +
+       "   float y = 1.0 - 2.0*(a_coords.y / u_height);\n" +
+       "   gl_Position = vec4(x, y, 0.0, 1.0);\n" +
+       "   v_color = a_color;\n" +
+       "   v_pointsize = a_pointsize;\n" +  
+       "   gl_PointSize = a_pointsize;\n" +
+       "}\n";
+
+       const fragmentShaderSource =
+       "precision mediump float;\n" +
+       "varying vec3 v_color;\n" +
+       "varying float v_pointsize;\n" +  // Receive point size from vertex shader
+       "void main() {\n" +
+       "   float distanceFromCenter = distance( gl_PointCoord, vec2(0.5,0.5) );\n" +
+       "   if ( distanceFromCenter >= 0.5 ) {\n" +
+       "       discard;  // don't draw this pixel!\n" +
+       "   }\n" +
+       "   float dotSize = 2.5 / v_pointsize;   // Relative size of the black dot\n" +
+       "   if ( distanceFromCenter < dotSize ) {\n" +  
+       "       gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);  // Color of the center dot (black in this case)\n" +
+       "   } else {\n" +
+       "       gl_FragColor = vec4(v_color, 1.0);\n" +
+       "   }\n" +
+       "}\n";
+
+let  canvas;  // The canvas where WebGL draws.
+let  gl;  // The WebGL graphics context.
+
+let  uniformWidth;   // Location of uniform named "u_width"
+let  uniformHeight;  // Location of uniform named "u_height"
+
+let  randomPointsize;   // Location of attribute named "a_pointsize" 
+let pointSizeBuffer;  // A vertex buffer object to hold the values for point sizes.
+
+let  attributeCoords;  // Location of the attribute named "a_coords".
+let  bufferCoords;     // A vertex buffer object to hold the values for coords.
+
+let  attributeColor;   // Location of the attribute named "a_color".
+let  bufferColor;     // A vertex buffer object to hold the values for color.
+
+let  animating = false;  // is the animation running?
+
+/* Data for the points, including their coordinates, velocities and colors.
+   The values for the arrays are created during initialization.  The random
+   colors are used when the user selects colored rather than red points.
+   The positions of the points are updated for each frame of the animation. */
+
+let  POINT_COUNT = 20; // The number of points.  This can be changed by the user.
+let  pointCoords = new Float32Array( 2*POINT_COUNT );
+let  pointVelocities = new Float32Array( 2*POINT_COUNT );
+let  pointRandomColors = new Float32Array( 3*POINT_COUNT );
+let  pointSizes = new Float32Array( POINT_COUNT );
+
+function createPointData() { // called during initialization to fill the arrays with data.
+    
+    pointCoords[0] = 16
+    pointCoords[1] = canvas.height/2 -1;
+
+    pointCoords[2] = canvas.width - 160;
+    pointCoords[3] = canvas.height/2;
+    
+
+    pointVelocities[0] = 1 * Math.cos(0.5);
+    //pointVelocities[1] = 1 * Math.sin(1);
+
+    pointVelocities[2] = -1 * Math.cos(0.5);
+    //pointVelocities[3] = -1 * Math.sin(1);
+    
+
+
+    pointSizes[0] = 15.0; // size of point
+    pointSizes[1] = 15.0; // size of point
+
+    
+    pointRandomColors[0] = 0.3;
+    pointRandomColors[4] = 0.7;
+    
+}
+
+function updatePointCoordsForFrame() { // called during an animation, before each frame.
+    for (let i = 0; i < POINT_COUNT; i++) {
+        let size = pointSizes[i] / 2; // Radius of the point
+
+        // Update the x-coordinate
+        pointCoords[2 * i] += pointVelocities[2 * i];
+        if (pointCoords[2 * i] - size < 0) {
+            pointCoords[2 * i] = size; // Move coord back onto canvas
+            pointVelocities[2 * i] = Math.abs(pointVelocities[2 * i]); // Ensure point is moving in positive direction
+        } else if (pointCoords[2 * i] + size > canvas.width) {
+            pointCoords[2 * i] = canvas.width - size; // Move coord back onto canvas
+            pointVelocities[2 * i] = -Math.abs(pointVelocities[2 * i]); // Ensure point is moving in negative direction
+        }
+
+        // Update the y-coordinate
+        pointCoords[2 * i + 1] += pointVelocities[2 * i + 1];
+        if (pointCoords[2 * i + 1] - size < 0) {
+            pointCoords[2 * i + 1] = size; // Move coord back onto canvas
+            pointVelocities[2 * i + 1] = Math.abs(pointVelocities[2 * i + 1]); // Ensure point is moving in positive direction
+        } else if (pointCoords[2 * i + 1] + size > canvas.height) {
+            pointCoords[2 * i + 1] = canvas.height - size; // Move coord back onto canvas
+            pointVelocities[2 * i + 1] = -Math.abs(pointVelocities[2 * i + 1]); // Ensure point is moving in negative direction
+        }
+    }
+
+    let  collision = document.getElementById("collisionCheckbox").checked;
+
+    if (collision){
+        checkPointCollision();
+    }
+}
+
+function checkPointCollision() {
+    for (let i = 0; i < POINT_COUNT; i++) {
+        for (let j = i + 1; j < POINT_COUNT; j++) {
+            let dx = pointCoords[2 * i] - pointCoords[2 * j];
+            let dy = pointCoords[2 * i + 1] - pointCoords[2 * j + 1];
+            let distance = Math.sqrt(dx * dx + dy * dy);
+            let sizeI = pointSizes[i] / 2;  // Radius of point i
+            let sizeJ = pointSizes[j] / 2;  // Radius of point j
+            let combinedSize = sizeI + sizeJ;
+
+            if (distance < combinedSize) {
+                // Calculate masses based on sizes
+                let massI = sizeI * sizeI;  // Mass is proportional to the area (size squared)
+                let massJ = sizeJ * sizeJ;
+
+                // Calculate the relative velocity
+                let vxI = pointVelocities[2 * i];
+                let vyI = pointVelocities[2 * i + 1];
+                let vxJ = pointVelocities[2 * j];
+                let vyJ = pointVelocities[2 * j + 1];
+                
+                let relativeVx = vxI - vxJ;
+                let relativeVy = vyI - vyJ;
+                let relativeSpeed = Math.sqrt(relativeVx * relativeVx + relativeVy * relativeVy);
+
+                let overlap = combinedSize - distance;
+                let p = overlap / relativeSpeed;
+
+                let xi_collision = pointCoords[2 * i] - vxI * p;
+                let yi_collision = pointCoords[2 * i + 1] - vyI * p;
+                let xj_collision = pointCoords[2 * j] - vxJ * p;
+                let yj_collision = pointCoords[2 * j + 1] - vyJ * p;
+                
+
+                // Calculate the normal vector at the point of collision
+                let nx = dx / distance;
+                let ny = dy / distance;
+
+
+                // Calculate the velocity along the normal
+                let dotProduct = relativeVx * nx + relativeVy * ny;
+
+                // Calculate the impulse scalar
+                let impulse = (2 * dotProduct) / (massI + massJ);
+
+                // Update velocities based on the impulse
+                pointVelocities[2 * i] -= impulse * massJ * nx;
+                pointVelocities[2 * i + 1] -= impulse * massJ * ny;
+                pointVelocities[2 * j] += impulse * massI * nx;
+                pointVelocities[2 * j + 1] += impulse * massI * ny;
+
+                //let moveX = (dx / distance) * overlap / 2;
+                //let moveY = (dy / distance) * overlap / 2;
+                //pointCoords[2 * i] += moveX;
+                //pointCoords[2 * i + 1] += moveY;
+                //pointCoords[2 * j] -= moveX;
+                //pointCoords[2 * j + 1] -= moveY;
+
+                
+                // Move points apart to avoid overlap
+                pointCoords[2 * i] += pointVelocities[2 * i] * 2*p;
+                pointCoords[2 * i + 1] += pointVelocities[2 * i + 1] * 2*p;
+                pointCoords[2 * j] += pointVelocities[2 * j] * 2*p;
+                pointCoords[2 * j + 1] += pointVelocities[2 * j + 1] * 2*p;
+            }
+        }
+    }
+}
+
+
+/**
+ *  Draws the content of the canvas, in this case, one primitive ot
+ *  type gl.POINTS, which represents all of the disks in the image.
+ */
+function draw() {
+
+    gl.clearColor(128 / 255, 128 / 255, 128 / 255, 1.0);  // specify the color to be used for clearing
+    gl.clear(gl.COLOR_BUFFER_BIT);  // clear the canvas (to black)
+    
+    /* Get options from the user interface. */
+
+    let  randomColors = document.getElementById("colorCheckbox").checked;
+    
+    /* Set up values for the "coords" attribute, giving point's positions */
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferCoords);
+    gl.bufferData(gl.ARRAY_BUFFER, pointCoords, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(attributeCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(attributeCoords); 
+   
+    /* Set up values for the "color" attribute */
+    
+    if ( randomColors ) { // use the attribute values from the color VBO, filled during initialization
+        gl.enableVertexAttribArray(attributeColor); 
+    }
+    else { // turn off vertexAttribArray and set a constant attribute color
+        gl.disableVertexAttribArray(attributeColor);
+        gl.vertexAttrib3f(attributeColor, 255, 215, 0);
+    }
+    
+    /* Set the pointsize uniform variable */
+    
+    //gl.uniform1f( uniformPointsize, pointsize );
+    
+    
+    /* Draw all the points with one command. */
+   
+    gl.drawArrays(gl.POINTS, 0, POINT_COUNT);
+    
+}
+
+/**
+ * Creates a program for use in the WebGL context gl, and returns the
+ * identifier for that program.  If an error occurs while compiling or
+ * linking the program, an exception of type String is thrown.  The error
+ * string contains the compilation or linking error.  If no error occurs,
+ * the program identifier is the return value of the function.
+ */
+function createProgram(gl, vertexShaderSource, fragmentShaderSource) {
+   let  vsh = gl.createShader( gl.VERTEX_SHADER );
+   gl.shaderSource( vsh, vertexShaderSource );
+   gl.compileShader( vsh );
+   if ( ! gl.getShaderParameter(vsh, gl.COMPILE_STATUS) ) {
+      throw new Error("Error in vertex shader:  " + gl.getShaderInfoLog(vsh));
+   }
+   let  fsh = gl.createShader( gl.FRAGMENT_SHADER );
+   gl.shaderSource( fsh, fragmentShaderSource );
+   gl.compileShader( fsh );
+   if ( ! gl.getShaderParameter(fsh, gl.COMPILE_STATUS) ) {
+      throw new Error("Error in fragment shader:  " + gl.getShaderInfoLog(fsh));
+   }
+   let  prog = gl.createProgram();
+   gl.attachShader( prog, vsh );
+   gl.attachShader( prog, fsh );
+   gl.linkProgram( prog );
+   if ( ! gl.getProgramParameter( prog, gl.LINK_STATUS) ) {
+      throw new Error("Link error in program:  " + gl.getProgramInfoLog(prog));
+   }
+   return prog;
+}
+
+/**
+ * Initialize the WebGL graphics context
+ */
+function initGL() {
+    let  prog = createProgram( gl, vertexShaderSource, fragmentShaderSource );
+    gl.useProgram(prog);
+    attributeCoords = gl.getAttribLocation(prog, "a_coords");
+    bufferCoords = gl.createBuffer();
+    attributeColor = gl.getAttribLocation(prog, "a_color");
+    bufferColor = gl.createBuffer();
+    uniformHeight = gl.getUniformLocation(prog, "u_height");
+    uniformWidth = gl.getUniformLocation(prog, "u_width");
+    gl.uniform1f(uniformHeight, canvas.height);
+    gl.uniform1f(uniformWidth, canvas.width);
+   
+    
+    randomPointsize = gl.getAttribLocation(prog, "a_pointsize");
+    pointSizeBuffer = gl.createBuffer();
+    
+    
+    createPointData();
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferColor);
+    gl.bufferData(gl.ARRAY_BUFFER, pointRandomColors, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(attributeColor, 3, gl.FLOAT, false, 0, 0);
+    
+    // Create a buffer for point sizes
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointSizeBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, pointSizes, gl.STATIC_DRAW);
+    gl.vertexAttribPointer(randomPointsize, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(randomPointsize);
+    
+    
+}
+
+/*------------ Animation support ------------*/
+
+function doFrame() {
+    if (animating) {
+        updatePointCoordsForFrame();
+        draw();
+        requestAnimationFrame(doFrame);
+    }
+}
+
+function doAnimationCheckbox() {
+    let  anim = document.getElementById("animateCheckbox").checked;
+    if (anim !== animating) {
+        animating = anim;
+        if (animating) {
+            doFrame();
+        }
+    }
+}
+
+
+/*-------------------------------------------*/
+
+/**
+ * Initialize the program.  This function is called after the page has been loaded.
+ */
+function init() {
+    try {
+        canvas = document.getElementById("webglcanvas");
+        let  options = {  // no need for alpha channel or depth buffer in this program
+            alpha: false,
+            depth: false
+        };
+        gl = canvas.getContext("webgl", options);
+              // (Note: this page would work with "webgl2", with no further modification.)
+        if ( ! gl ) {
+            throw "Browser does not support WebGL";
+        }
+    }
+    catch (e) {
+        document.getElementById("canvas-holder").innerHTML =
+            "<p>Sorry, could not get a WebGL graphics context.</p>";
+        return;
+    }
+    try {
+        initGL();  // initialize the WebGL graphics context
+    }
+    catch (e) {
+        document.getElementById("canvas-holder").innerHTML =
+            "<p>Sorry, could not initialize the WebGL graphics context: " + e + "</p>";
+        return;
+    }
+    document.getElementById("animateCheckbox").checked = true;
+    document.getElementById("colorCheckbox").checked = true;
+    document.getElementById("collisionCheckbox").checked = true;
+    //document.getElementById("sizeChoice").value = "32";
+    document.getElementById("animateCheckbox").onchange = doAnimationCheckbox;
+    document.getElementById("colorCheckbox").onchange = function() {
+        if (!animating) {
+            draw();
+        }
+    };
+  
+    doAnimationCheckbox();
+}
+
+function changePoints() {
+    POINT_COUNT = Number(document.getElementById("pointsInput").value);
+    pointCoords = new Float32Array( 2*POINT_COUNT );
+    pointVelocities = new Float32Array( 2*POINT_COUNT );
+    pointRandomColors = new Float32Array( 3*POINT_COUNT );
+    pointSizes = new Float32Array( POINT_COUNT );
+    init();
+}
+
+
+window.onload = init;  // Arrange for init() to be called after page has loaded.
+
+</script>
+</head>
+<body>
+
+<h2>Moving Points with the WebGL POINTS primitive</h2>
+
+<noscript><p><b>Sorry, but this page requires JavaScript.</b></p></noscript>
+
+<p>
+    <label><b><input type="checkbox" id="animateCheckbox">&nbsp;Animate</b></label>
+    <label><b><input type="checkbox" id="colorCheckbox">&nbsp;Random&nbsp;Colors</b></label>
+    <label><b><input type="checkbox" id="collisionCheckbox">&nbsp;Collision</b></label>
+    <label><b>Number of Points:</b>&nbsp;<input type="number" id="pointsInput" value="20"></label>
+    <button onclick="changePoints()">Change Points</button>
+</p>
+
+<div id="canvas-holder">
+<canvas id="webglcanvas" width="800" height="600" ></canvas>
+</div>
+
+</body>
+</html>
