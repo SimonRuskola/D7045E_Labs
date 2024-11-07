@@ -30,9 +30,10 @@
 const  vertexShaderSource =
        "attribute vec2 a_coords;\n" +
        "attribute vec3 a_color;\n" +
+       "attribute float a_pointsize;\n" +
        
+       "varying float v_pointsize;\n" +  // Pass point size to fragment shader
        "varying vec3 v_color;\n" +
-       "uniform float u_pointsize;\n" +
        "uniform float u_width;\n" +
        "uniform float u_height;\n" +
        "void main() {\n" +
@@ -40,18 +41,21 @@ const  vertexShaderSource =
        "   float y = 1.0 - 2.0*(a_coords.y / u_height);\n" +
        "   gl_Position = vec4(x, y, 0.0, 1.0);\n" +
        "   v_color = a_color;\n" +
-       "   gl_PointSize = u_pointsize;\n" +
+       "   v_pointsize = a_pointsize;\n" +  
+       "   gl_PointSize = a_pointsize;\n" +
        "}\n";
 
        const fragmentShaderSource =
        "precision mediump float;\n" +
        "varying vec3 v_color;\n" +
+       "varying float v_pointsize;\n" +  // Receive point size from vertex shader
        "void main() {\n" +
        "   float distanceFromCenter = distance( gl_PointCoord, vec2(0.5,0.5) );\n" +
        "   if ( distanceFromCenter >= 0.5 ) {\n" +
        "       discard;  // don't draw this pixel!\n" +
        "   }\n" +
-       "   if ( distanceFromCenter < 0.05 ) {\n" +  
+       "   float dotSize = 2.5 / v_pointsize;   // Relative size of the black dot\n" +
+       "   if ( distanceFromCenter < dotSize ) {\n" +  
        "       gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);  // Color of the center dot (black in this case)\n" +
        "   } else {\n" +
        "       gl_FragColor = vec4(v_color, 1.0);\n" +
@@ -63,7 +67,9 @@ let  gl;  // The WebGL graphics context.
 
 let  uniformWidth;   // Location of uniform named "u_width"
 let  uniformHeight;  // Location of uniform named "u_height"
-let  uniformPointsize;   // Location of uniform named "u_pointsize" 
+
+let  randomPointsize;   // Location of attribute named "a_pointsize" 
+let pointSizeBuffer;  // A vertex buffer object to hold the values for point sizes.
 
 let  attributeCoords;  // Location of the attribute named "a_coords".
 let  bufferCoords;     // A vertex buffer object to hold the values for coords.
@@ -78,10 +84,11 @@ let  animating = false;  // is the animation running?
    colors are used when the user selects colored rather than red points.
    The positions of the points are updated for each frame of the animation. */
 
-let  POINT_COUNT = 100; // The number of points.  This can be changed by the user.
+let  POINT_COUNT = 20; // The number of points.  This can be changed by the user.
 let  pointCoords = new Float32Array( 2*POINT_COUNT );
 let  pointVelocities = new Float32Array( 2*POINT_COUNT );
 let  pointRandomColors = new Float32Array( 3*POINT_COUNT );
+let  pointSizes = new Float32Array( POINT_COUNT );
 
 function createPointData() { // called during initialization to fill the arrays with data.
     for (let i = 0; i < POINT_COUNT; i++) {
@@ -93,6 +100,8 @@ function createPointData() { // called during initialization to fill the arrays 
         let  randomAngle = 2*Math.PI * Math.random();
         pointVelocities[2*i] = randomVelocity * Math.cos(randomAngle);
         pointVelocities[2*i+1] = randomVelocity * Math.sin(randomAngle);
+
+        pointSizes[i] = 32; // size of point
     }
     for (let i = 0; i < 3 * POINT_COUNT; i++) {
            // The array contains color components, with three numbers per vertex.
@@ -102,27 +111,47 @@ function createPointData() { // called during initialization to fill the arrays 
 }
 
 function updatePointCoordsForFrame() { // called during an animation, before each frame.
-    let  size = Number(document.getElementById("sizeChoice").value) / 2; // radius
-    for (let i = 0; i < 2*POINT_COUNT; i += 2) { // x-coords
-        pointCoords[i] += pointVelocities[i];
-        if (pointCoords[i]-size < 0) {
-            pointCoords[i] = size-(pointCoords[i]-size);// move coord back onto canvas
-            pointVelocities[i] = Math.abs(pointVelocities[i]); // and make sure point is moving in positive direction
+    for (let i = 0; i < POINT_COUNT; i++) {
+        let size = pointSizes[i] / 2; // Radius of the point
+
+        let vx = pointVelocities[2 * i];
+        let vy = pointVelocities[2 * i + 1];
+        let speed = Math.sqrt(vx * vx + vy * vy);
+
+        
+        
+
+        // Update the x-coordinate
+        pointCoords[2 * i] += pointVelocities[2 * i];
+        if (pointCoords[2 * i] - size < 0) {
+            pointCoords[2 * i] = size; // Move coord back onto canvas
+            pointVelocities[2 * i] = Math.abs(pointVelocities[2 * i]); // Ensure point is moving in positive direction
+
+            let overlap = size - pointCoords[2 * i];
+            let p = overlap / speed;
+            pointCoords[2 * i] += pointVelocities[2 * i] * p;
+        } else if (pointCoords[2 * i] + size > canvas.width) {
+            pointCoords[2 * i] = canvas.width - size; // Move coord back onto canvas
+            pointVelocities[2 * i] = -Math.abs(pointVelocities[2 * i]); // Ensure point is moving in negative direction
+            let overlap = pointCoords[2 * i] + size - canvas.width;
+            let p = overlap / speed;
+            pointCoords[2 * i] += pointVelocities[2 * i] * p;
         }
-        else if (pointCoords[i]+size > canvas.width) {
-            pointCoords[i] = canvas.width - (pointCoords[i]+size - canvas.width) - size;// move coord back onto canvas
-            pointVelocities[i] = -Math.abs(pointVelocities[i]); // and make sure point is moving in negative direction
-        }
-    }
-    for (let i = 1; i < 2*POINT_COUNT; i += 2) { // y-coords
-        pointCoords[i] += pointVelocities[i];
-        if (pointCoords[i]-size < 0) {
-            pointCoords[i] = size-(pointCoords[i]-size);// move coord back onto canvas
-            pointVelocities[i] = Math.abs(pointVelocities[i]); // and make sure point is moving in positive direction
-        }
-        else if (pointCoords[i]+size > canvas.height) {
-            pointCoords[i] = canvas.height - (pointCoords[i]+size - canvas.height) - size;// move coord back onto canvas
-            pointVelocities[i] = -Math.abs(pointVelocities[i]); // and make sure point is moving in negative direction
+
+        // Update the y-coordinate
+        pointCoords[2 * i + 1] += pointVelocities[2 * i + 1];
+        if (pointCoords[2 * i + 1] - size < 0) {
+            pointCoords[2 * i + 1] = size; // Move coord back onto canvas
+            pointVelocities[2 * i + 1] = Math.abs(pointVelocities[2 * i + 1]); // Ensure point is moving in positive direction
+            let overlap = size - pointCoords[2 * i + 1];
+            let p = overlap / speed;
+            pointCoords[2 * i + 1] += pointVelocities[2 * i + 1] * p;
+        } else if (pointCoords[2 * i + 1] + size > canvas.height) {
+            pointCoords[2 * i + 1] = canvas.height - size; // Move coord back onto canvas
+            pointVelocities[2 * i + 1] = -Math.abs(pointVelocities[2 * i + 1]); // Ensure point is moving in negative direction
+            let overlap = pointCoords[2 * i + 1] + size - canvas.height;
+            let p = overlap / speed;
+            pointCoords[2 * i + 1] += pointVelocities[2 * i + 1] * p;
         }
     }
 
@@ -134,31 +163,69 @@ function updatePointCoordsForFrame() { // called during an animation, before eac
 }
 
 function checkPointCollision() {
-    let size = Number(document.getElementById("sizeChoice").value); // radius
     for (let i = 0; i < POINT_COUNT; i++) {
         for (let j = i + 1; j < POINT_COUNT; j++) {
             let dx = pointCoords[2 * i] - pointCoords[2 * j];
             let dy = pointCoords[2 * i + 1] - pointCoords[2 * j + 1];
             let distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance < size) {
-                // Simple collision response: swap velocities
-                let tempVx = pointVelocities[2 * i];
-                let tempVy = pointVelocities[2 * i + 1];
-                pointVelocities[2 * i] = pointVelocities[2 * j];
-                pointVelocities[2 * i + 1] = pointVelocities[2 * j + 1];
-                pointVelocities[2 * j] = tempVx;
-                pointVelocities[2 * j + 1] = tempVy;
+            let sizeI = pointSizes[i] / 2;  // Radius of point i
+            let sizeJ = pointSizes[j] / 2;  // Radius of point j
+            let combinedSize = sizeI + sizeJ;
+
+            if (distance < combinedSize) {
+                // Calculate masses based on sizes
+                let massI = sizeI * sizeI;  // Mass is proportional to the area (size squared)
+                let massJ = sizeJ * sizeJ;
+
+                // Calculate the relative velocity
+                let vxI = pointVelocities[2 * i];
+                let vyI = pointVelocities[2 * i + 1];
+                let vxJ = pointVelocities[2 * j];
+                let vyJ = pointVelocities[2 * j + 1];
+                
+                let relativeVx = vxI - vxJ;
+                let relativeVy = vyI - vyJ;
+                let relativeSpeed = Math.sqrt(relativeVx * relativeVx + relativeVy * relativeVy);
+
+                let overlap = combinedSize - distance;
+                let p = overlap / relativeSpeed;
+
+                let xi_collision = pointCoords[2 * i] - vxI * p;
+                let yi_collision = pointCoords[2 * i + 1] - vyI * p;
+                let xj_collision = pointCoords[2 * j] - vxJ * p;
+                let yj_collision = pointCoords[2 * j + 1] - vyJ * p;
+                
+
+                // Calculate the normal vector at the point of collision
+                let nx = dx / distance;
+                let ny = dy / distance;
+
+
+                // Calculate the velocity along the normal
+                let dotProduct = relativeVx * nx + relativeVy * ny;
+
+                // Calculate the impulse scalar
+                let impulse = (2 * dotProduct) / (massI + massJ);
+
+                // Update velocities based on the impulse
+                pointVelocities[2 * i] -= impulse * massJ * nx;
+                pointVelocities[2 * i + 1] -= impulse * massJ * ny;
+                pointVelocities[2 * j] += impulse * massI * nx;
+                pointVelocities[2 * j + 1] += impulse * massI * ny;
+
+                //let moveX = (dx / distance) * overlap / 2;
+                //let moveY = (dy / distance) * overlap / 2;
+                //pointCoords[2 * i] += moveX;
+                //pointCoords[2 * i + 1] += moveY;
+                //pointCoords[2 * j] -= moveX;
+                //pointCoords[2 * j + 1] -= moveY;
 
                 
                 // Move points apart to avoid overlap
-                let overlap = size - distance;
-                let moveX = (dx / distance) * overlap / 2;
-                let moveY = (dy / distance) * overlap / 2;
-                pointCoords[2 * i] += moveX;
-                pointCoords[2 * i + 1] += moveY;
-                pointCoords[2 * j] -= moveX;
-                pointCoords[2 * j + 1] -= moveY;
-                
+                pointCoords[2 * i] += pointVelocities[2 * i] * 2*p;
+                pointCoords[2 * i + 1] += pointVelocities[2 * i + 1] * 2*p;
+                pointCoords[2 * j] += pointVelocities[2 * j] * 2*p;
+                pointCoords[2 * j + 1] += pointVelocities[2 * j + 1] * 2*p;
             }
         }
     }
@@ -177,7 +244,6 @@ function draw() {
     /* Get options from the user interface. */
 
     let  randomColors = document.getElementById("colorCheckbox").checked;
-    let  pointsize = Number(document.getElementById("sizeChoice").value);
     
     /* Set up values for the "coords" attribute, giving point's positions */
 
@@ -198,7 +264,8 @@ function draw() {
     
     /* Set the pointsize uniform variable */
     
-    gl.uniform1f( uniformPointsize, pointsize );
+    //gl.uniform1f( uniformPointsize, pointsize );
+    
     
     /* Draw all the points with one command. */
    
@@ -250,12 +317,23 @@ function initGL() {
     uniformWidth = gl.getUniformLocation(prog, "u_width");
     gl.uniform1f(uniformHeight, canvas.height);
     gl.uniform1f(uniformWidth, canvas.width);
-    uniformPointsize = gl.getUniformLocation(prog, "u_pointsize");
+   
+    
+    randomPointsize = gl.getAttribLocation(prog, "a_pointsize");
+    pointSizeBuffer = gl.createBuffer();
+    
+    
     createPointData();
     gl.bindBuffer(gl.ARRAY_BUFFER, bufferColor);
     gl.bufferData(gl.ARRAY_BUFFER, pointRandomColors, gl.STREAM_DRAW);
     gl.vertexAttribPointer(attributeColor, 3, gl.FLOAT, false, 0, 0);
-
+    
+    // Create a buffer for point sizes
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointSizeBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, pointSizes, gl.STATIC_DRAW);
+    gl.vertexAttribPointer(randomPointsize, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(randomPointsize);
+    
     
 }
 
@@ -314,18 +392,14 @@ function init() {
     document.getElementById("animateCheckbox").checked = true;
     document.getElementById("colorCheckbox").checked = true;
     document.getElementById("collisionCheckbox").checked = true;
-    document.getElementById("sizeChoice").value = "32";
+    //document.getElementById("sizeChoice").value = "32";
     document.getElementById("animateCheckbox").onchange = doAnimationCheckbox;
     document.getElementById("colorCheckbox").onchange = function() {
         if (!animating) {
             draw();
         }
     };
-    document.getElementById("sizeChoice").onchange = function() {
-        if (!animating) {
-            draw();
-        }
-    };
+  
     doAnimationCheckbox();
 }
 
@@ -334,6 +408,7 @@ function changePoints() {
     pointCoords = new Float32Array( 2*POINT_COUNT );
     pointVelocities = new Float32Array( 2*POINT_COUNT );
     pointRandomColors = new Float32Array( 3*POINT_COUNT );
+    pointSizes = new Float32Array( POINT_COUNT );
     init();
 }
 
@@ -351,13 +426,8 @@ window.onload = init;  // Arrange for init() to be called after page has loaded.
 <p>
     <label><b><input type="checkbox" id="animateCheckbox">&nbsp;Animate</b></label>
     <label><b><input type="checkbox" id="colorCheckbox">&nbsp;Random&nbsp;Colors</b></label>
-    <label><b>Point Size:</b>&nbsp;<select id="sizeChoice">
-        <option value="16">Small</option>
-        <option value="32">Medium</option>
-        <option value="64">Large</option>
-    </select></label>
     <label><b><input type="checkbox" id="collisionCheckbox">&nbsp;Collision</b></label>
-    <label><b>Number of Points:</b>&nbsp;<input type="number" id="pointsInput" value="100"></label>
+    <label><b>Number of Points:</b>&nbsp;<input type="number" id="pointsInput" value="20"></label>
     <button onclick="changePoints()">Change Points</button>
 </p>
 

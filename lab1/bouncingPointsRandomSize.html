@@ -113,14 +113,28 @@ function updatePointCoordsForFrame() { // called during an animation, before eac
     for (let i = 0; i < POINT_COUNT; i++) {
         let size = pointSizes[i] / 2; // Radius of the point
 
+        let vx = pointVelocities[2 * i];
+        let vy = pointVelocities[2 * i + 1];
+        let speed = Math.sqrt(vx * vx + vy * vy);
+
+        
+        
+
         // Update the x-coordinate
         pointCoords[2 * i] += pointVelocities[2 * i];
         if (pointCoords[2 * i] - size < 0) {
             pointCoords[2 * i] = size; // Move coord back onto canvas
             pointVelocities[2 * i] = Math.abs(pointVelocities[2 * i]); // Ensure point is moving in positive direction
+
+            let overlap = size - pointCoords[2 * i];
+            let p = overlap / speed;
+            pointCoords[2 * i] += pointVelocities[2 * i] * p;
         } else if (pointCoords[2 * i] + size > canvas.width) {
             pointCoords[2 * i] = canvas.width - size; // Move coord back onto canvas
             pointVelocities[2 * i] = -Math.abs(pointVelocities[2 * i]); // Ensure point is moving in negative direction
+            let overlap = pointCoords[2 * i] + size - canvas.width;
+            let p = overlap / speed;
+            pointCoords[2 * i] += pointVelocities[2 * i] * p;
         }
 
         // Update the y-coordinate
@@ -128,9 +142,15 @@ function updatePointCoordsForFrame() { // called during an animation, before eac
         if (pointCoords[2 * i + 1] - size < 0) {
             pointCoords[2 * i + 1] = size; // Move coord back onto canvas
             pointVelocities[2 * i + 1] = Math.abs(pointVelocities[2 * i + 1]); // Ensure point is moving in positive direction
+            let overlap = size - pointCoords[2 * i + 1];
+            let p = overlap / speed;
+            pointCoords[2 * i + 1] += pointVelocities[2 * i + 1] * p;
         } else if (pointCoords[2 * i + 1] + size > canvas.height) {
             pointCoords[2 * i + 1] = canvas.height - size; // Move coord back onto canvas
             pointVelocities[2 * i + 1] = -Math.abs(pointVelocities[2 * i + 1]); // Ensure point is moving in negative direction
+            let overlap = pointCoords[2 * i + 1] + size - canvas.height;
+            let p = overlap / speed;
+            pointCoords[2 * i + 1] += pointVelocities[2 * i + 1] * p;
         }
     }
 
