@@ -65,8 +65,10 @@ let  POINT_COUNT = 20; // The number of points.  This can be changed by the user
 let  pointCoords = new Float32Array( 2*POINT_COUNT );
 let  pointColors = new Float32Array( 3*POINT_COUNT );
 let  pointSizes = new Float32Array( POINT_COUNT );
-let  triangles = []; 
+
+let triangleColors = [];
 let triangleCoords = new Float32Array(); // Array to hold triangle coordinates
+
 let bufferTriangles; // Buffer for triangle coordinates
 let uniformPointSize;
 
@@ -100,14 +102,24 @@ function draw() {
     gl.bufferData(gl.ARRAY_BUFFER, pointCoords, gl.STREAM_DRAW);
     gl.vertexAttribPointer(attributeCoords, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(attributeCoords); 
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferColor);
+    gl.bufferData(gl.ARRAY_BUFFER, pointColors, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(attributeColor, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(attributeColor);
     
     gl.drawArrays(gl.POINTS, 0, POINT_COUNT);
 
     if (triangleCoords.length > 0) {
         gl.bindBuffer(gl.ARRAY_BUFFER, bufferTriangles);
-        gl.bufferData(gl.ARRAY_BUFFER, pointCoords, gl.STREAM_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, triangleCoords, gl.STREAM_DRAW);
         gl.vertexAttribPointer(attributeCoords, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(attributeCoords);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufferColor);
+        gl.bufferData(gl.ARRAY_BUFFER, triangleColors, gl.STREAM_DRAW);
+        gl.vertexAttribPointer(attributeColor, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(attributeColor);
 
         gl.drawArrays(gl.TRIANGLES, 0, triangleCoords.length / 2);
     }
