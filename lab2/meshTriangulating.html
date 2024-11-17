@@ -1,186 +1,257 @@
+
 <!DOCTYPE html>
+
+<!--
+   This page shows an animation of colored disks moving around
+   in a canvas, bouncing off the edges.  The program uses WebGL.
+   All of the points are drawn as single primitive of type POINTS.
+   The color is an attribute in the vertex shader, allowing
+   each point to be a different primitive.  The user can decide
+   whether to have randomly colored points or to make all the
+   points red.  The point size is a uniform variable, so all
+   the points are the same size.  However, the user can select
+   whether the size is large or small.
+-->
+
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Point Set Triangulation</title>
+<title>Triangulation in WebGL</title>
+<style>
+    label {
+        margin-left: 30px;
+    }
+</style>
+
 <script>
+
 "use strict";
 
-const vertexShaderSource =
-    "attribute vec2 a_coords;\n" +
-    "attribute vec3 a_color;\n" +
-    "varying vec3 v_color;\n" +
-    "void main() {\n" +
-    "   gl_Position = vec4(a_coords, 0.0, 1.0);\n" +
-    "   v_color = a_color;\n" +
-    "}\n";
+const  vertexShaderSource =
+       "attribute vec2 a_coords;\n" +
+       "attribute vec3 a_color;\n" +
+       "varying vec3 v_color;\n" +
+       "uniform float u_width;\n" +
+       "uniform float u_height;\n" +
+       "uniform float u_pointSize;\n" + 
+       "void main() {\n" +
+       "   float x = -1.0 + 2.0*(a_coords.x / u_width);\n" +
+       "   float y = 1.0 - 2.0*(a_coords.y / u_height);\n" +
+       "   gl_Position = vec4(x, y, 0.0, 1.0);\n" +
+       "   v_color = a_color;\n" +
+       "   gl_PointSize = u_pointSize;\n" + 
+       "}\n";
 
 const fragmentShaderSource =
-    "precision mediump float;\n" +
-    "varying vec3 v_color;\n" +
-    "void main() {\n" +
-    "   gl_FragColor = vec4(v_color, 1.0);\n" +
-    "}\n";
+       "precision mediump float;\n" +
+       "varying vec3 v_color;\n" +
+       "void main() {\n" +
+       "   gl_FragColor = vec4(v_color, 1.0);\n" +
+       "}\n";
 
-let gl;
-let program;
-let attributeCoords;
-let bufferCoords;
-let attributeColor;
-let bufferColor;
-let points = [];
-let triangles = [];
+let  canvas;  // The canvas where WebGL draws.
+let  gl;  // The WebGL graphics context.
 
+let  uniformWidth;   // Location of uniform named "u_width"
+let  uniformHeight;  // Location of uniform named "u_height"
+
+let  attributeCoords;  // Location of the attribute named "a_coords".
+let  bufferCoords;     // A vertex buffer object to hold the values for coords.
+
+let  attributeColor;   // Location of the attribute named "a_color".
+let  bufferColor;     // A vertex buffer object to hold the values for color.
+
+let  POINT_COUNT = 20; // The number of points.  This can be changed by the user.
+let  pointCoords = new Float32Array( 2*POINT_COUNT );
+let  pointColors = new Float32Array( 3*POINT_COUNT );
+let  pointSizes = new Float32Array( POINT_COUNT );
+let  triangles = []; 
+let triangleCoords = new Float32Array(); // Array to hold triangle coordinates
+let bufferTriangles; // Buffer for triangle coordinates
+let uniformPointSize;
+
+function createPointData() { // called during initialization to fill the arrays with data.
+    for (let i = 0; i < POINT_COUNT; i++) {
+
+        pointSizes[i] = 5; // size of point
+        let margin = pointSizes[i];
+        pointCoords[2 * i] = margin + (canvas.width - 2 * margin) * Math.random();  // x-coordinate of point
+        pointCoords[2 * i + 1] = margin + (canvas.height - 2 * margin) * Math.random();  // y-coordinate of point
+      
+    }
+    for (let i = 0; i < POINT_COUNT; i++) {
+
+        pointColors[i*3] = 0;
+        pointColors[i*3 + 1] = 0;
+        pointColors[i*3 + 2] = 0;
+    }
+}
 
 function draw() {
-    gl.clearColor(0, 0, 0, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT);
 
-    if (points.length > 0) {
-        gl.bindBuffer(gl.ARRAY_BUFFER, bufferCoords);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points.flat()), gl.STREAM_DRAW);
+    gl.clearColor(128 / 255, 128 / 255, 128 / 255, 1.0);  // specify the color to be used for clearing
+    gl.clear(gl.COLOR_BUFFER_BIT);  // clear the canvas (to black)
+    
+    gl.uniform1f(uniformPointSize, 5.0);
+    
+    /* Set up values for the "coords" attribute, giving point's positions */
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferCoords);
+    gl.bufferData(gl.ARRAY_BUFFER, pointCoords, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(attributeCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(attributeCoords); 
+    
+    gl.drawArrays(gl.POINTS, 0, POINT_COUNT);
+
+    if (triangleCoords.length > 0) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufferTriangles);
+        gl.bufferData(gl.ARRAY_BUFFER, pointCoords, gl.STREAM_DRAW);
         gl.vertexAttribPointer(attributeCoords, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(attributeCoords);
 
-        let colors = new Float32Array(points.length * 3);
-        for (let i = 0; i < points.length; i++) {
-            colors.set([Math.random(), Math.random(), Math.random()], i * 3);
-        }
-        gl.bindBuffer(gl.ARRAY_BUFFER, bufferColor);
-        gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STREAM_DRAW);
-        gl.vertexAttribPointer(attributeColor, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(attributeColor);
-
-        gl.drawArrays(gl.POINTS, 0, points.length);
+        gl.drawArrays(gl.TRIANGLES, 0, triangleCoords.length / 2);
     }
-
-    if (triangles.length > 0) {
-        let indices = [];
-        for (let triangle of triangles) {
-            indices.push(points.indexOf(triangle.vertices[0]));
-            indices.push(points.indexOf(triangle.vertices[1]));
-            indices.push(points.indexOf(triangle.vertices[2]));
-        }
-
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STREAM_DRAW);
-
-        gl.uniform4f(gl.getUniformLocation(program, "u_color"), 0, 0, 0, 1);
-        gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
-
-        gl.uniform4f(gl.getUniformLocation(program, "u_color"), 1, 1, 1, 1);
-        for (let i = 0; i < indices.length; i += 3) {
-            gl.drawElements(gl.LINE_LOOP, 3, gl.UNSIGNED_SHORT, i * 2);
-        }
-    }
+    
 }
 
 function createProgram(gl, vertexShaderSource, fragmentShaderSource) {
-    let vsh = gl.createShader(gl.VERTEX_SHADER);
-    gl.shaderSource(vsh, vertexShaderSource);
-    gl.compileShader(vsh);
-    if (!gl.getShaderParameter(vsh, gl.COMPILE_STATUS)) {
-        throw new Error("Error in vertex shader: " + gl.getShaderInfoLog(vsh));
-    }
-    let fsh = gl.createShader(gl.FRAGMENT_SHADER);
-    gl.shaderSource(fsh, fragmentShaderSource);
-    gl.compileShader(fsh);
-    if (!gl.getShaderParameter(fsh, gl.COMPILE_STATUS)) {
-        throw new Error("Error in fragment shader: " + gl.getShaderInfoLog(fsh));
-    }
-    let prog = gl.createProgram();
-    gl.attachShader(prog, vsh);
-    gl.attachShader(prog, fsh);
-    gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-        throw new Error("Link error in program: " + gl.getProgramInfoLog(prog));
-    }
-    return prog;
+   let  vsh = gl.createShader( gl.VERTEX_SHADER );
+   gl.shaderSource( vsh, vertexShaderSource );
+   gl.compileShader( vsh );
+   if ( ! gl.getShaderParameter(vsh, gl.COMPILE_STATUS) ) {
+      throw new Error("Error in vertex shader:  " + gl.getShaderInfoLog(vsh));
+   }
+   let  fsh = gl.createShader( gl.FRAGMENT_SHADER );
+   gl.shaderSource( fsh, fragmentShaderSource );
+   gl.compileShader( fsh );
+   if ( ! gl.getShaderParameter(fsh, gl.COMPILE_STATUS) ) {
+      throw new Error("Error in fragment shader:  " + gl.getShaderInfoLog(fsh));
+   }
+   let  prog = gl.createProgram();
+   gl.attachShader( prog, vsh );
+   gl.attachShader( prog, fsh );
+   gl.linkProgram( prog );
+   if ( ! gl.getProgramParameter( prog, gl.LINK_STATUS) ) {
+      throw new Error("Link error in program:  " + gl.getProgramInfoLog(prog));
+   }
+   return prog;
 }
 
+/**
+ * Initialize the WebGL graphics context
+ */
 function initGL() {
-    let prog = createProgram(gl, vertexShaderSource, fragmentShaderSource);
+    let  prog = createProgram( gl, vertexShaderSource, fragmentShaderSource );
     gl.useProgram(prog);
+
     attributeCoords = gl.getAttribLocation(prog, "a_coords");
     bufferCoords = gl.createBuffer();
+
     attributeColor = gl.getAttribLocation(prog, "a_color");
     bufferColor = gl.createBuffer();
+
+    uniformHeight = gl.getUniformLocation(prog, "u_height");
+    uniformWidth = gl.getUniformLocation(prog, "u_width");
+    uniformPointSize = gl.getUniformLocation(prog, "u_pointSize"); 
+    gl.uniform1f(uniformHeight, canvas.height);
+    gl.uniform1f(uniformWidth, canvas.width);
+    gl.uniform1f(uniformPointSize, 10.0);
+   
+    createPointData();
+
+    // Create a buffer for triangle coordinates
+    bufferTriangles = gl.createBuffer();
+    
 }
 
+/**
+ * Initialize the program.  This function is called after the page has been loaded.
+ */
 function init() {
     try {
-        let canvas = document.getElementById("webglcanvas");
-        let options = { alpha: false, depth: false };
+        canvas = document.getElementById("webglcanvas");
+        let  options = {  // no need for alpha channel or depth buffer in this program
+            alpha: false,
+            depth: false
+        };
         gl = canvas.getContext("webgl", options);
-        if (!gl) {
+              // (Note: this page would work with "webgl2", with no further modification.)
+        if ( ! gl ) {
             throw "Browser does not support WebGL";
         }
-    } catch (e) {
+    }
+    catch (e) {
         document.getElementById("canvas-holder").innerHTML =
             "<p>Sorry, could not get a WebGL graphics context.</p>";
         return;
     }
     try {
-        initGL();
-    } catch (e) {
+        initGL();  // initialize the WebGL graphics context
+    }
+    catch (e) {
         document.getElementById("canvas-holder").innerHTML =
-            "<p>Sorry, could not initialize the WebGL graphics context: " + e.message + "</p>";
+            "<p>Sorry, could not initialize the WebGL graphics context: " + e + "</p>";
         return;
     }
+ 
     draw();
 }
 
-class Triangle {
-    constructor(v0, v1, v2) {
-        this.vertices = [v0, v1, v2];
-        this.neighbors = [null, null, null];
-    }
-
-    setNeighbor(edgeIndex, neighbor) {
-        this.neighbors[edgeIndex] = neighbor;
-    }
-}
-
-function generateRandomPoints(count) {
-    points = [];
-    for (let i = 0; i < count; i++) {
-        points.push([Math.random() * 2 - 1, Math.random() * 2 - 1]);
-    }
-    draw();
+function changePoints() {
+    POINT_COUNT = Number(document.getElementById("pointsInput").value);
+    pointCoords = new Float32Array( 2*POINT_COUNT );
+    pointColors = new Float32Array( 3*POINT_COUNT );
+    triangleCoords = new Float32Array();
+    init();
 }
 
 function triangulate() {
-    points.sort((a, b) => a[0] - b[0]);
-    triangles = incrementalTriangulation(points);
+    console.log("Triangulating...");
+    let triangles = [];
+    let triangleColors = [];
+    for (let i = 0; i < POINT_COUNT - 2; i++) {
+        triangles.push(pointCoords[2 * i], pointCoords[2 * i + 1]);
+        triangles.push(pointCoords[2 * (i + 1)], pointCoords[2 * (i + 1) + 1]);
+        triangles.push(pointCoords[2 * (i + 2)], pointCoords[2 * (i + 2) + 1]);
+
+        // Add color data for each vertex of the triangle
+        triangleColors.push(1.0, 0.0, 0.0); // Red color for the first vertex
+        triangleColors.push(0.0, 1.0, 0.0); // Green color for the second vertex
+        triangleColors.push(0.0, 0.0, 1.0); // Blue color for the third vertex
+    }
+    triangleCoords = new Float32Array(triangles);
+    triangleColors = new Float32Array(triangleColors);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferTriangles);
+    gl.bufferData(gl.ARRAY_BUFFER, triangleCoords, gl.STREAM_DRAW);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferColor);
+    gl.bufferData(gl.ARRAY_BUFFER, triangleColors, gl.STREAM_DRAW);
+
     draw();
 }
 
-function incrementalTriangulation(points) {
-     // Placeholder for the incremental triangulation algorithm
-    // Return an array of Triangle objects
-    let triangles = [];
-    // Example: Create a single triangle for demonstration
-    if (points.length >= 3) {
-        let tri = new Triangle(points[0], points[1], points[2]);
-        triangles.push(tri);
-    }
-    return triangles;
-}
 
-window.onload = init;
+window.onload = init;  // Arrange for init() to be called after page has loaded.
+
 </script>
 </head>
 <body>
-<h2>Triangulate in WebGL</h2>
+
+<h2>Triangulation</h2>
+
 <noscript><p><b>Sorry, but this page requires JavaScript.</b></p></noscript>
-<div id="controls">
-    <button onclick="generateRandomPoints(10)">Generate 10 Points</button>
-    <button onclick="generateRandomPoints(100)">Generate 100 Points</button>
-    <button onclick="generateRandomPoints(1000)">Generate 1000 Points</button>
+
+<p>
+    <label><b>Number of Points:</b>&nbsp;<input type="number" id="pointsInput" value="20"></label>
+    <button onclick="changePoints()">Change Points</button>
     <button onclick="triangulate()">Triangulate</button>
-</div>
+</p>
+
+
 <div id="canvas-holder">
-    <canvas id="webglcanvas" width="600" height="600"></canvas>
+<canvas id="webglcanvas" width="800" height="600" ></canvas>
 </div>
+
 </body>
 </html>
