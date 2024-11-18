@@ -67,7 +67,7 @@ let  pointColors = new Float32Array( 3*POINT_COUNT );
 let  pointSizes = new Float32Array( POINT_COUNT );
 
 let triangleColors = [];
-let triangleCoords = new Float32Array(); // Array to hold triangle coordinates
+let triangleCoords = []; // Array to hold triangle coordinates
 
 let bufferTriangles; // Buffer for triangle coordinates
 let uniformPointSize;
@@ -213,7 +213,7 @@ function changePoints() {
     POINT_COUNT = Number(document.getElementById("pointsInput").value);
     pointCoords = new Float32Array( 2*POINT_COUNT );
     pointColors = new Float32Array( 3*POINT_COUNT );
-    triangleCoords = new Float32Array();
+    triangleCoords = [];
     triangleColors = [];
     init();
 }
@@ -221,39 +221,26 @@ function changePoints() {
 function triangulate() {
 
     console.log("Triangulating...");
-    let triangles = [];
 
-     // Step 1: Sort points by x-coordinate (and by y-coordinate if x-coordinates are the same)
+
+     // Sort points by x-coordinate (and by y-coordinate if x-coordinates are the same)
     let points = [];
     for (let i = 0; i < POINT_COUNT; i++) {
         points.push({ x: pointCoords[2 * i], y: pointCoords[2 * i + 1] });
     }
     points.sort((a, b) => a.x === b.x ? a.y - b.y : a.x - b.x);
 
-    // Step 2: Incremental construction of the triangulation
-    let hull = [];
+    let convexHull;
+    convexHull = calculateConvexHull(points, POINT_COUNT);
 
-    for (let i = 0; i < points.length; i++) {
-        // Add the point to the hull and update the triangulation
-        hull.push(points[i]);
-        hull.sort((a, b) => a.x === b.x ? a.y - b.y : a.x - b.x);
+    console.log("convexHull: "+convexHull);
 
-        // Create triangles with the new point
-        for (let j = 0; j < hull.length - 2; j++) {
-            triangles.push(hull[j].x, hull[j].y);
-            triangles.push(hull[j + 1].x, hull[j + 1].y);
-            triangles.push(hull[j + 2].x, hull[j + 2].y);
-
-            // Add color data for each vertex of the triangle
-            triangleColors.push(1.0, 0.0, 0.0); // Red color for the first vertex
-            triangleColors.push(0.0, 1.0, 0.0); // Green color for the second vertex
-            triangleColors.push(0.0, 0.0, 1.0); // Blue color for the third vertex
-        }
-    }
-
+    // Initialize the first triangle with the first three points
+    addTriangle(points[0].x, points[0].y, points[1].x, points[1].y, points[2].x, points[2].y);
+   
 
     
-    triangleCoords = new Float32Array(triangles);
+    triangleCoords = new Float32Array(triangleCoords);
     triangleColors = new Float32Array(triangleColors);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, bufferTriangles);
@@ -263,6 +250,40 @@ function triangulate() {
     gl.bufferData(gl.ARRAY_BUFFER, triangleColors, gl.STREAM_DRAW);
 
     draw();
+}
+
+function calculateConvexHull(points, n) {
+
+    console.log(points);
+    // Initialize the convex hull with the first three points
+    let hull = [points[0], points[1]];
+    for (let i = 2; i < n; i++) {
+        hull.push(points[i]);
+        while (hull.length > 2 && !rightTurn(hull[hull.length - 3], hull[hull.length - 2], hull[hull.length - 1])) {
+            hull.splice(hull.length - 2, 1);
+        }
+    }
+
+    return hull;
+
+}
+
+function rightTurn(a, b, c) {
+    return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x) > 0;
+}
+
+
+
+function addTriangle(x1, y1, x2, y2, x3, y3) {
+    // Add color data for each vertex of the triangle
+    triangleColors.push(1.0, 0.0, 0.0); // Red color for the first vertex
+    triangleColors.push(0.0, 1.0, 0.0); // Green color for the second vertex
+    triangleColors.push(0.0, 0.0, 1.0); // Blue color for the third vertex
+    // Add coordinates for each vertex of the triangle
+    triangleCoords.push(x1, y1);
+    triangleCoords.push(x2, y2);
+    triangleCoords.push(x3, y3);
+   
 }
 
 
