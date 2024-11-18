@@ -92,7 +92,7 @@ function createPointData() { // called during initialization to fill the arrays 
 function draw() {
 
     gl.clearColor(128 / 255, 128 / 255, 128 / 255, 1.0);  // specify the color to be used for clearing
-    gl.clear(gl.COLOR_BUFFER_BIT);  // clear the canvas (to black)
+    gl.clear(gl.COLOR_BUFFER_BIT);  // clear the canvas 
     
     gl.uniform1f(uniformPointSize, 5.0);
     
@@ -214,23 +214,45 @@ function changePoints() {
     pointCoords = new Float32Array( 2*POINT_COUNT );
     pointColors = new Float32Array( 3*POINT_COUNT );
     triangleCoords = new Float32Array();
+    triangleColors = [];
     init();
 }
 
 function triangulate() {
+
     console.log("Triangulating...");
     let triangles = [];
-    let triangleColors = [];
-    for (let i = 0; i < POINT_COUNT - 2; i++) {
-        triangles.push(pointCoords[2 * i], pointCoords[2 * i + 1]);
-        triangles.push(pointCoords[2 * (i + 1)], pointCoords[2 * (i + 1) + 1]);
-        triangles.push(pointCoords[2 * (i + 2)], pointCoords[2 * (i + 2) + 1]);
 
-        // Add color data for each vertex of the triangle
-        triangleColors.push(1.0, 0.0, 0.0); // Red color for the first vertex
-        triangleColors.push(0.0, 1.0, 0.0); // Green color for the second vertex
-        triangleColors.push(0.0, 0.0, 1.0); // Blue color for the third vertex
+     // Step 1: Sort points by x-coordinate (and by y-coordinate if x-coordinates are the same)
+    let points = [];
+    for (let i = 0; i < POINT_COUNT; i++) {
+        points.push({ x: pointCoords[2 * i], y: pointCoords[2 * i + 1] });
     }
+    points.sort((a, b) => a.x === b.x ? a.y - b.y : a.x - b.x);
+
+    // Step 2: Incremental construction of the triangulation
+    let hull = [];
+
+    for (let i = 0; i < points.length; i++) {
+        // Add the point to the hull and update the triangulation
+        hull.push(points[i]);
+        hull.sort((a, b) => a.x === b.x ? a.y - b.y : a.x - b.x);
+
+        // Create triangles with the new point
+        for (let j = 0; j < hull.length - 2; j++) {
+            triangles.push(hull[j].x, hull[j].y);
+            triangles.push(hull[j + 1].x, hull[j + 1].y);
+            triangles.push(hull[j + 2].x, hull[j + 2].y);
+
+            // Add color data for each vertex of the triangle
+            triangleColors.push(1.0, 0.0, 0.0); // Red color for the first vertex
+            triangleColors.push(0.0, 1.0, 0.0); // Green color for the second vertex
+            triangleColors.push(0.0, 0.0, 1.0); // Blue color for the third vertex
+        }
+    }
+
+
+    
     triangleCoords = new Float32Array(triangles);
     triangleColors = new Float32Array(triangleColors);
 
