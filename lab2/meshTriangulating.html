@@ -230,14 +230,43 @@ function triangulate() {
     }
     points.sort((a, b) => a.x === b.x ? a.y - b.y : a.x - b.x);
 
-    let convexHull;
-    convexHull = calculateConvexHull(points, POINT_COUNT);
+   /*  let convexHull;
+    convexHull = calculateConvexHull(points);
 
     console.log("convexHull: "+convexHull);
+    for (let i = 0; i < convexHull.length; i++) {
+        console.log(convexHull[i].x + ", " + convexHull[i].y);
+    }
+    console.log(points); */
 
     // Initialize the first triangle with the first three points
     addTriangle(points[0].x, points[0].y, points[1].x, points[1].y, points[2].x, points[2].y);
-   
+
+    let i = 3;
+    while (triangleCoords.length == pointCoords.length) {
+        let convexHull = calculateConvexHull(triangleCoords);
+
+        // Find the point with the largest x value
+        let pointWithLargestX = convexHull.reduce((max, point) => point.x > max.x ? point : max, convexHull[0]);
+        let indexOfLargestX = convexHull.findIndex(point => point.x === pointWithLargestX.x && point.y === pointWithLargestX.y);
+        let p = convexHull[indexOfLargestX];
+        
+        let n = triangleCoords.length / 2;
+        for (let j = 0; j < n; j += 3) {
+            let x1 = triangleCoords[j];
+            let y1 = triangleCoords[j + 1];
+            let x2 = triangleCoords[j + 2];
+            let y2 = triangleCoords[j + 3];
+            let x3 = triangleCoords[j + 4];
+            let y3 = triangleCoords[j + 5];
+
+
+           
+        }
+
+        i++;
+    }
+    
 
     
     triangleCoords = new Float32Array(triangleCoords);
@@ -252,24 +281,33 @@ function triangulate() {
     draw();
 }
 
-function calculateConvexHull(points, n) {
+function calculateConvexHull(points) {
 
-    console.log(points);
-    // Initialize the convex hull with the first three points
-    let hull = [points[0], points[1]];
-    for (let i = 2; i < n; i++) {
-        hull.push(points[i]);
-        while (hull.length > 2 && !rightTurn(hull[hull.length - 3], hull[hull.length - 2], hull[hull.length - 1])) {
-            hull.splice(hull.length - 2, 1);
+    if (points.length < 3) return points;
+
+    let hull = [];
+
+    let pointOnHull = points[0];
+    let endpoint;
+
+    do {
+        hull.push(pointOnHull);
+        endpoint = points[0];
+
+        for (let j = 1; j < points.length; j++) {
+            if (endpoint === pointOnHull || isLeftTurn(pointOnHull, endpoint, points[j])) {
+                endpoint = points[j];
+            }
         }
-    }
+
+        pointOnHull = endpoint;
+    } while (endpoint !== hull[0]);
 
     return hull;
-
 }
 
-function rightTurn(a, b, c) {
-    return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x) > 0;
+function isLeftTurn(p1, p2, p3) {
+    return ((p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x)) > 0;
 }
 
 
