@@ -283,7 +283,7 @@ function checkCollision(convexHull, p1, p2){
         let p3 = convexHull[i];
         let p4 = convexHull[(i + 1) % convexHull.length];
         if (doIntersect(p1, p2, p3, p4)) {
-            return false;
+            return true;
         }
     }
 
@@ -295,6 +295,10 @@ function doIntersect(p1, p2, p3, p4){
     let o2 = orientation(p1, p2, p4);
     let o3 = orientation(p3, p4, p1);
     let o4 = orientation(p3, p4, p2);
+    console.log("o1: " + o1);
+    console.log("o2: " + o2);
+    console.log("o3: " + o3);
+    console.log("o4: " + o4);
 
     // General case
     if (o1 != o2 && o3 != o4) {
@@ -325,6 +329,14 @@ function doIntersect(p1, p2, p3, p4){
     return false; // Doesn't fall in any of the above cases
 
 }
+
+function onSegment(p, q, r) { 
+    if (q.x <= Math.max(p.x, r.x) && q.x >= Math.min(p.x, r.x) && 
+        q.y <= Math.max(p.y, r.y) && q.y >= Math.min(p.y, r.y)) 
+    return true; 
+    
+    return false; 
+} 
 
 function orientation(p, q, r){
     // See https://www.geeksforgeeks.org/orientation-3-ordered-points/
