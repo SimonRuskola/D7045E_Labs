@@ -232,31 +232,48 @@ function triangulate() {
 
     // Initialize the first triangle with the first three points
     addTriangle(points[0].x, points[0].y, points[1].x, points[1].y, points[2].x, points[2].y);
-    let convexHull = [];
-    convexHull.push(points[0]);
-    convexHull.push(points[1]);
-    convexHull.push(points[2]);
+    let convex = new convexHull();
+
+
+    let node1 = new Node(points[0]);
+    let node2 = new Node(points[1]);
+    let node3 = new Node(points[2]);
+
+
+
+
 
 
 
     for (let i = 3; i< points.length; i++) {
         let newPoint = points[i];
         let lastPoint = convexHull[convexHull.length - 1];
+        let nextPoint;
+        let currentAngle;
+        let lastAngle;
+
+        for (const point of convexHull) {
+            console.log(point.x + " " + point.y);
+        }
+
 
         for (let j = 1; j < convexHull.length; j++) {
 
-            let nextPoint = convexHull[(convexHull.length - 1 + j) % convexHull.length];
+            lastAngle = (lastPoint.y - newPoint.y/ (lastPoint.x - newPoint.x));
 
-            let collision = checkCollision(convexHull, newPoint, nextPoint);
-            console.log("collision: ");
-            console.log(collision);
+            nextPoint = convexHull[(convexHull.length - 1 - j) % convexHull.length];
 
-            if (!collision) {
-                addTriangle(nextPoint.x, nextPoint.y, lastPoint.x, lastPoint.y, newPoint.x, newPoint.y); 
-                
-            }else {
+            currentAngle = (nextPoint.y - newPoint.y/ (nextPoint.x - newPoint.x));
+
+            
+            console.log("Current angle: " + currentAngle + " Last angle: " + lastAngle);
+
+            if (currentAngle > lastAngle) {
                 break;
             }
+            
+            addTriangle(nextPoint.x, nextPoint.y, lastPoint.x, lastPoint.y, newPoint.x, newPoint.y);              
+           
         }
         
 
@@ -277,79 +294,12 @@ function triangulate() {
     draw();
 }
 
-function checkCollision(convexHull, p1, p2){
-    //check if the line between p1 and p2 intersects with any edge of the convex hull
-    for (let i = 0; i < convexHull.length; i++) {
-        let p3 = convexHull[i];
-        let p4 = convexHull[(i + 1) % convexHull.length];
-        if (doIntersect(p1, p2, p3, p4)) {
-            return true;
-        }
+class Node {
+    constructor(point) {
+        this.point = point;
+        this.next = null;
     }
-
 }
-
-function doIntersect(p1, p2, p3, p4){
-    // Find the 4 orientations required for the general and special cases
-    let o1 = orientation(p1, p2, p3);
-    let o2 = orientation(p1, p2, p4);
-    let o3 = orientation(p3, p4, p1);
-    let o4 = orientation(p3, p4, p2);
-    console.log("o1: " + o1);
-    console.log("o2: " + o2);
-    console.log("o3: " + o3);
-    console.log("o4: " + o4);
-
-    // General case
-    if (o1 != o2 && o3 != o4) {
-        return true;
-    }
-
-    // Special Cases
-    // p1, p2 and p3 are colinear and p3 lies on segment p1p2
-    if (o1 == 0 && onSegment(p1, p3, p2)) {
-        return true;
-    }
-
-    // p1, p2 and p4 are colinear and p4 lies on segment p1p2
-    if (o2 == 0 && onSegment(p1, p4, p2)) {
-        return true;
-    }
-
-    // p3, p4 and p1 are colinear and p1 lies on segment p3p4
-    if (o3 == 0 && onSegment(p3, p1, p4)) {
-        return true;
-    }
-
-    // p3, p4 and p2 are colinear and p2 lies on segment p3p4
-    if (o4 == 0 && onSegment(p3, p2, p4)) {
-        return true;
-    }
-
-    return false; // Doesn't fall in any of the above cases
-
-}
-
-function onSegment(p, q, r) { 
-    if (q.x <= Math.max(p.x, r.x) && q.x >= Math.min(p.x, r.x) && 
-        q.y <= Math.max(p.y, r.y) && q.y >= Math.min(p.y, r.y)) 
-    return true; 
-    
-    return false; 
-} 
-
-function orientation(p, q, r){
-    // See https://www.geeksforgeeks.org/orientation-3-ordered-points/
-    // for details of below formula.
-    let val = (q.y - p.y) * (r.x - q.x) -(q.x - p.x) * (r.y - q.y);
-
-    if (val == 0) {
-        return 0; // colinear
-    }
-    return (val > 0) ? 1 : 2; // clock or counterclock wise
-}   
-
-    
 
 function addTriangle(x1, y1, x2, y2, x3, y3) {
     // Add color data for each vertex of the triangle
@@ -357,11 +307,14 @@ function addTriangle(x1, y1, x2, y2, x3, y3) {
     triangleColors.push(0.0, 1.0, 0.0); // Green color for the second vertex
     triangleColors.push(0.0, 0.0, 1.0); // Blue color for the third vertex
     // Add coordinates for each vertex of the triangle
+    console.log(x1, y1, x2, y2, x3, y3);
     triangleCoords.push(x1, y1);
     triangleCoords.push(x2, y2);
     triangleCoords.push(x3, y3);
    
 }
+
+
 
 
 window.onload = init;  // Arrange for init() to be called after page has loaded.
