@@ -267,6 +267,10 @@ function triangulate() {
             console.log(point.x + " " + point.y);
         }
 
+        let tempConvexHull = convexHull.slice();
+
+        let addedFirstTraingle = false;
+
 
         for (let j = 1; j < convexHull.length; j++) {
 
@@ -289,7 +293,16 @@ function triangulate() {
                 break;
             }
             
-            addTriangle(nextPoint.x, nextPoint.y, lastPoint.x, lastPoint.y, newPoint.x, newPoint.y);              
+            addTriangle(nextPoint.x, nextPoint.y, lastPoint.x, lastPoint.y, newPoint.x, newPoint.y);
+            if(j==1){
+                tempConvexHull.push(newPoint);
+            }
+            addedFirstTraingle = true;
+            
+            if(j>1){
+                console.log("Removing point: " + lastPoint.x + " " + lastPoint.y);
+                tempConvexHull = tempConvexHull.filter(p => !(p.x === lastPoint.x && p.y === lastPoint.y));
+            }
            
         }
 
@@ -316,8 +329,31 @@ function triangulate() {
                 break;
             }
             
-            addTriangle(nextPoint.x, nextPoint.y, lastPoint.x, lastPoint.y, newPoint.x, newPoint.y);              
+            addTriangle(nextPoint.x, nextPoint.y, lastPoint.x, lastPoint.y, newPoint.x, newPoint.y);  
+            
+            if(!(tempConvexHull[tempConvexHull.length-1] == newPoint)){
+                let lastElement = tempConvexHull.pop();
+                tempConvexHull.unshift(lastElement);
+                if(!addedFirstTraingle){
+                    tempConvexHull.push(newPoint);
+                }
+                
+            }
+
+
+            if(j>1 || addedFirstTraingle){
+                console.log("Removing point: " + lastPoint.x + " " + lastPoint.y);
+                tempConvexHull = tempConvexHull.filter(p => !(p.x === lastPoint.x && p.y === lastPoint.y));
+            }
            
+        }
+
+
+        convexHull = tempConvexHull.slice();
+
+        console.log("New Convex hull: ");
+        for (const point of convexHull) {
+            console.log(point.x + " " + point.y);
         }
 
         
