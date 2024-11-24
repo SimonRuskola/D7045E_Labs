@@ -1,6 +1,7 @@
 
 <!DOCTYPE html>
 
+
 <html>
 <head>
 <meta charset="UTF-8">
@@ -56,6 +57,7 @@ let  pointSizes = new Float32Array( POINT_COUNT );
 
 let triangleColors = [];
 let triangleCoords = []; // Array to hold triangle coordinates
+let triangles = [];
 
 let bufferTriangles; // Buffer for triangle coordinates
 let uniformPointSize;
@@ -348,6 +350,53 @@ function triangulate() {
 
     }
 
+    let edges = [];
+
+    // Step 1: Store all edges with pointers to their triangles
+    triangles.forEach((triangle, index) => {
+        triangle.neighbors = []; // Initialize neighbors array
+        let vertices = [triangle.point1, triangle.point2, triangle.point3];
+        edges.push({ x0: vertices[0].x, y0: vertices[0].y, x1: vertices[1].x, y1: vertices[1].y, ptr: index });
+        edges.push({ x0: vertices[1].x, y0: vertices[1].y, x1: vertices[2].x, y1: vertices[2].y, ptr: index });
+        edges.push({ x0: vertices[2].x, y0: vertices[2].y, x1: vertices[0].x, y1: vertices[0].y, ptr: index });
+    });
+
+    // Step 2: Sort the edges
+    edges.sort((a, b) => {
+        let [ax0, ax1] = [Math.min(a.x0, a.x1), Math.max(a.x0, a.x1)];
+        let [ay0, ay1] = [Math.min(a.y0, a.y1), Math.max(a.y0, a.y1)];
+        let [bx0, bx1] = [Math.min(b.x0, b.x1), Math.max(b.x0, b.x1)];
+        let [by0, by1] = [Math.min(b.y0, b.y1), Math.max(b.y0, b.y1)];
+
+        if (ax0 !== bx0) return ax0 - bx0;
+        if (ax1 !== bx1) return ax1 - bx1;
+        if (ay0 !== by0) return ay0 - by0;
+        return ay1 - by1;
+    });
+
+    // Step 3: Identify neighboring triangles
+    for (let i = 0; i < edges.length - 1; i++) {
+        let edge1 = edges[i];
+        let edge2 = edges[i + 1];
+
+        if (edge1.x0 === edge2.x0 && edge1.x1 === edge2.x1 && edge1.y0 === edge2.y0 && edge1.y1 === edge2.y1) {
+            // These edges are shared by neighboring triangles
+            triangles[edge1.ptr].neighbors.push(triangles[edge2.ptr]);
+            triangles[edge2.ptr].neighbors.push(triangles[edge1.ptr]);
+        }
+    }
+
+    // Log edges and neighbors for debugging
+    console.log("Edges:", edges);
+    for (let i = 0; i < triangles.length; i++) {
+        console.log(`Triangle ${i} points to:`);
+        triangles[i].neighbors.forEach(neighbor => {
+            console.log(`  Neighbor Triangle:`, neighbor);
+        });
+    }
+
+
+
 
   
   
@@ -375,7 +424,32 @@ function addTriangle(x1, y1, x2, y2, x3, y3) {
     triangleCoords.push(x1, y1);
     triangleCoords.push(x2, y2);
     triangleCoords.push(x3, y3);
-   
+
+    let node1 = new point(x1, y1);
+    let node2 = new point(x2, y2);
+    let node3 = new point(x3, y3);
+
+    let triangle1 = new triangle(node1, node2, node3);
+
+    triangles.push(triangle1);
+    
+}
+
+class point {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+
+class triangle {
+    constructor(p1, p2, p3) {
+        this.point1 = p1;
+        this.point2 = p2;
+        this.point3 = p3;
+        this.neighbors = [];
+    }
 }
 
 
