@@ -233,11 +233,135 @@ function triangulate() {
     // Initialize the first triangle with the first three points
     addTriangle(points[0].x, points[0].y, points[1].x, points[1].y, points[2].x, points[2].y);
 
-    console.log("convex hull ") ;
-    let convexHull = calculateConvexHull(pointCoords);
-  
-    
+    let convexHull = [];
 
+    let angle0 = (points[2].y - points[0].y) / (points[2].x - points[0].x);
+    let angle1 = (points[2].y - points[1].y) / (points[2].x - points[1].x);
+    
+    if (angle1 > angle0) {
+        console.log("Angle 1 is greater than angle 0");
+        convexHull.push(points[0]);
+        convexHull.push(points[1]);
+    }else if (angle1 == angle0) {
+        console.log("Points are collinear");
+        convexHull.push(points[0]);
+        convexHull.push(points[1]);
+    }else {
+        console.log("Angle 0 is greater than angle 1");
+        convexHull.push(points[1]);
+        convexHull.push(points[0]);
+    }
+    
+    convexHull.push(points[2]);
+
+    for (let i = 3; i< points.length; i++) {
+        let newPoint = points[i];
+        let lastPoint = convexHull[convexHull.length - 1];
+        let nextPoint;
+        let currentAngle;
+        let lastAngle;
+
+        console.log("New point: " + newPoint.x + " " + newPoint.y);
+
+        for (const point of convexHull) {
+            console.log(point.x + " " + point.y);
+        }
+
+        let tempConvexHull = convexHull.slice();
+
+        let addedFirstTraingle = false;
+
+
+        for (let j = 1; j < convexHull.length; j++) {
+
+            if (j > 1){
+                lastPoint = convexHull[(convexHull.length - 1 + (j-1)) % convexHull.length];
+            }
+
+            lastAngle = -((lastPoint.y - newPoint.y)/ (lastPoint.x - newPoint.x));
+
+            nextPoint = convexHull[(convexHull.length - 1 + j) % convexHull.length];
+
+
+            currentAngle = -((nextPoint.y - newPoint.y)/ (nextPoint.x - newPoint.x));
+
+            
+            console.log("Current angle: " + currentAngle + " Last angle: " + lastAngle);
+
+            if (currentAngle < lastAngle) {
+                console.log("Breaking1");
+                break;
+            }
+            
+            addTriangle(nextPoint.x, nextPoint.y, lastPoint.x, lastPoint.y, newPoint.x, newPoint.y);
+            if(j==1){
+                tempConvexHull.push(newPoint);
+            }
+            addedFirstTraingle = true;
+            
+            if(j>1){
+                console.log("Removing point: " + lastPoint.x + " " + lastPoint.y);
+                tempConvexHull = tempConvexHull.filter(p => !(p.x === lastPoint.x && p.y === lastPoint.y));
+            }
+           
+        }
+
+        lastPoint = convexHull[convexHull.length - 1];
+
+        for (let j = 1; j < convexHull.length; j++) {
+
+            if (j > 1){
+                lastPoint = convexHull[(convexHull.length - 1 - (j-1)) % convexHull.length];
+            }
+
+            lastAngle = -((lastPoint.y - newPoint.y)/ (lastPoint.x - newPoint.x));
+        
+
+            nextPoint = convexHull[(convexHull.length - 1 - j) % convexHull.length];
+
+            currentAngle = -((nextPoint.y - newPoint.y) / (nextPoint.x - newPoint.x));
+
+            
+            console.log("Current angle: " + currentAngle + " Last angle: " + lastAngle);
+
+            if (currentAngle > lastAngle) {
+                console.log("Breaking2");
+                break;
+            }
+            
+            addTriangle(nextPoint.x, nextPoint.y, lastPoint.x, lastPoint.y, newPoint.x, newPoint.y);  
+            
+            if(!(tempConvexHull[tempConvexHull.length-1] == newPoint)){
+                let lastElement = tempConvexHull.pop();
+                tempConvexHull.unshift(lastElement);
+                if(!addedFirstTraingle){
+                    tempConvexHull.push(newPoint);
+                }
+                
+            }
+
+
+            if(j>1 || addedFirstTraingle){
+                console.log("Removing point: " + lastPoint.x + " " + lastPoint.y);
+                tempConvexHull = tempConvexHull.filter(p => !(p.x === lastPoint.x && p.y === lastPoint.y));
+            }
+           
+        }
+
+
+        convexHull = tempConvexHull.slice();
+
+        console.log("New Convex hull: ");
+        for (const point of convexHull) {
+            console.log(point.x + " " + point.y);
+        }
+
+        
+
+    }
+
+
+  
   
     triangleCoords = new Float32Array(triangleCoords);
     triangleColors = new Float32Array(triangleColors);
@@ -251,45 +375,6 @@ function triangulate() {
     draw();
 }
 
-    
-
-function calculateConvexHull(points) {
-
-    if (points.length < 6) return points;
-
-        let hull = [];
-
-        // Convert points array to an array of objects with x and y properties
-        let pointObjects = [];
-        for (let i = 0; i < points.length; i += 2) {
-            pointObjects.push({ x: points[i], y: points[i + 1] });
-        }
-
-        let pointOnHull = pointObjects[0];
-        let endpoint;
-
-        do {
-            hull.push(pointOnHull);
-            endpoint = pointObjects[0];
-
-            for (let j = 1; j < pointObjects.length; j++) {
-                if (endpoint === pointOnHull || isLeftTurn(pointOnHull, endpoint, pointObjects[j])) {
-                    endpoint = pointObjects[j];
-                }
-            }
-
-            pointOnHull = endpoint;
-        } while (endpoint !== hull[0]);
-
-
-    return hull;
-}
-
-function isLeftTurn(p1, p2, p3) {
-    return ((p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x)) > 0;
-}
-
-
 
 function addTriangle(x1, y1, x2, y2, x3, y3) {
     // Add color data for each vertex of the triangle
@@ -297,11 +382,15 @@ function addTriangle(x1, y1, x2, y2, x3, y3) {
     triangleColors.push(0.0, 1.0, 0.0); // Green color for the second vertex
     triangleColors.push(0.0, 0.0, 1.0); // Blue color for the third vertex
     // Add coordinates for each vertex of the triangle
+    console.log("Adding triangle: ");
+    console.log(x1, y1, x2, y2, x3, y3);
     triangleCoords.push(x1, y1);
     triangleCoords.push(x2, y2);
     triangleCoords.push(x3, y3);
    
 }
+
+
 
 
 window.onload = init;  // Arrange for init() to be called after page has loaded.
