@@ -68,8 +68,8 @@ function createPointData() { // called during initialization to fill the arrays 
 
         pointSizes[i] = 5; // size of point
         let margin = pointSizes[i];
-        pointCoords[2 * i] = Math.floor(margin + (canvas.width - 2 * margin) * Math.random());  // x-coordinate of point
-        pointCoords[2 * i + 1] = Math.floor(margin + (canvas.height - 2 * margin) * Math.random());  // y-coordinate of point
+        pointCoords[2 * i] = (margin + (canvas.width - 2 * margin) * Math.random());  // x-coordinate of point
+        pointCoords[2 * i + 1] = (margin + (canvas.height - 2 * margin) * Math.random());  // y-coordinate of point
       
     }
     for (let i = 0; i < POINT_COUNT; i++) {
