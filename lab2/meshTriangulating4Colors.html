@@ -380,6 +380,12 @@ function triangulate() {
 
     addPointer();
 
+    console.log("Triangles: ", triangles);
+
+    colorTriangles();
+
+    console.log("Triangles: ", triangles);
+
     
     triangleCoords = new Float32Array(triangleCoords);
     triangleColors = new Float32Array(triangleColors);
@@ -485,6 +491,7 @@ class triangle {
         this.point2 = p2;
         this.point3 = p3;
         this.neighbors = [];
+        this.color = null;
     }
 }
 
@@ -503,23 +510,23 @@ function colorTriangles() {
         let color = getColor(triangle.color);
         triangleColors.push(...color, ...color, ...color);
     });
-
-    draw();
 }
 
 function colorTriangle(triangle) {
-    // Temporarily remove the triangle from the graph
-    let neighbors = triangle.neighbors.filter(neighbor => neighbor.color === null);
-
-    // Recursively color the neighbors
-    neighbors.forEach(neighbor => colorTriangle(neighbor));
-
     // Find a color not used by the neighbors
-    let usedColors = new Set(neighbors.map(neighbor => neighbor.color));
+    let usedColors = new Set(triangle.neighbors.map(neighbor => neighbor.color));
+    console.log("Used colors: ", usedColors);
     let availableColors = [0, 1, 2, 3].filter(color => !usedColors.has(color));
 
     // Assign the first available color to the triangle
     triangle.color = availableColors[0];
+
+    // Recursively color the neighbors
+    triangle.neighbors.forEach(neighbor => {
+        if (neighbor.color === null) {
+            colorTriangle(neighbor);
+        }
+    });
 }
 
 function getColor(colorIndex) {
@@ -546,7 +553,6 @@ window.onload = init;  // Arrange for init() to be called after page has loaded.
     <label><b>Number of Points:</b>&nbsp;<input type="number" id="pointsInput" value="20"></label>
     <button onclick="changePoints()">Change Points</button>
     <button onclick="triangulate()">Triangulate</button>
-    <button onclick="colorTriangles()">Color Triangles</button>
 </p>
 
 
