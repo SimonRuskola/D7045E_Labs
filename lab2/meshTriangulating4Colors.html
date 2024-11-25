@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+
+
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Triangulation in WebGL</title>
+<style>
+    label {
+        margin-left: 30px;
+    }
+</style>
+
+<script>
+
+"use strict";
+
+const  vertexShaderSource =
+       "attribute vec2 a_coords;\n" +
+       "attribute vec3 a_color;\n" +
+       "varying vec3 v_color;\n" +
+       "uniform float u_width;\n" +
+       "uniform float u_height;\n" +
+       "uniform float u_pointSize;\n" + 
+       "void main() {\n" +
+       "   float x = -1.0 + 2.0*(a_coords.x / u_width);\n" +
+       "   float y = 1.0 - 2.0*(a_coords.y / u_height);\n" +
+       "   gl_Position = vec4(x, y, 0.0, 1.0);\n" +
+       "   v_color = a_color;\n" +
+       "   gl_PointSize = u_pointSize;\n" + 
+       "}\n";
+
+const fragmentShaderSource =
+       "precision mediump float;\n" +
+       "varying vec3 v_color;\n" +
+       "void main() {\n" +
+       "   gl_FragColor = vec4(v_color, 1.0);\n" +
+       "}\n";
+
+let  canvas;  // The canvas where WebGL draws.
+let  gl;  // The WebGL graphics context.
+
+let  uniformWidth;   // Location of uniform named "u_width"
+let  uniformHeight;  // Location of uniform named "u_height"
+
+let  attributeCoords;  // Location of the attribute named "a_coords".
+let  bufferCoords;     // A vertex buffer object to hold the values for coords.
+
+let  attributeColor;   // Location of the attribute named "a_color".
+let  bufferColor;     // A vertex buffer object to hold the values for color.
+
+let  POINT_COUNT = 20; // The number of points.  This can be changed by the user.
+let  pointCoords = new Float32Array( 2*POINT_COUNT );
+let  pointColors = new Float32Array( 3*POINT_COUNT );
+let  pointSizes = new Float32Array( POINT_COUNT );
+
+let triangleColors = [];
+let triangleCoords = []; // Array to hold triangle coordinates
+let triangles = [];
+
+let bufferTriangles; // Buffer for triangle coordinates
+let bufferTriangleEdges; // Buffer for triangle edges
+let triangleEdges = []; // Array to hold triangle edges
+let uniformPointSize;
+
+let p = { x: 400, y: 300 }; // Point p used for shading
+
+function createPointData() { // called during initialization to fill the arrays with data.
+    for (let i = 0; i < POINT_COUNT; i++) {
+
+        pointSizes[i] = 5; // size of point
+        let margin = pointSizes[i];
+        pointCoords[2 * i] = (margin + (canvas.width - 2 * margin) * Math.random());  // x-coordinate of point
+        pointCoords[2 * i + 1] = (margin + (canvas.height - 2 * margin) * Math.random());  // y-coordinate of point
+      
+    }
+    for (let i = 0; i < POINT_COUNT; i++) {
+
+        pointColors[i*3] = 0;
+        pointColors[i*3 + 1] = 0;
+        pointColors[i*3 + 2] = 0;
+    }
+}
+
+
+
+
+function draw() {
+
+    gl.clearColor(128 / 255, 128 / 255, 128 / 255, 1.0);  // specify the color to be used for clearing
+    gl.clear(gl.COLOR_BUFFER_BIT);  // clear the canvas 
+    
+    gl.uniform1f(uniformPointSize, 5.0);
+    
+    /* Set up values for the "coords" attribute, giving point's positions */
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferCoords);
+    gl.bufferData(gl.ARRAY_BUFFER, pointCoords, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(attributeCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(attributeCoords); 
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferColor);
+    gl.bufferData(gl.ARRAY_BUFFER, pointColors, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(attributeColor, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(attributeColor);
+    
+    gl.drawArrays(gl.POINTS, 0, POINT_COUNT);
+
+    if (triangleCoords.length > 0) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufferTriangles);
+        gl.bufferData(gl.ARRAY_BUFFER, triangleCoords, gl.STREAM_DRAW);
+        gl.vertexAttribPointer(attributeCoords, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(attributeCoords);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufferColor);
+        gl.bufferData(gl.ARRAY_BUFFER, triangleColors, gl.STREAM_DRAW);
+        gl.vertexAttribPointer(attributeColor, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(attributeColor);
+
+        gl.drawArrays(gl.TRIANGLES, 0, triangleCoords.length / 2);
+
+        // Draw triangle edges
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufferTriangleEdges);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(triangleEdges), gl.STREAM_DRAW);
+        gl.vertexAttribPointer(attributeCoords, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(attributeCoords);
+
+        // Set edge color to black
+        let edgeColors = new Float32Array(triangleEdges.length / 2 * 3).fill(0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufferColor);
+        gl.bufferData(gl.ARRAY_BUFFER, edgeColors, gl.STREAM_DRAW);
+        gl.vertexAttribPointer(attributeColor, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(attributeColor);
+
+        gl.drawArrays(gl.LINES, 0, triangleEdges.length / 2);
+    }
+    
+}
+
+function createProgram(gl, vertexShaderSource, fragmentShaderSource) {
+   let  vsh = gl.createShader( gl.VERTEX_SHADER );
+   gl.shaderSource( vsh, vertexShaderSource );
+   gl.compileShader( vsh );
+   if ( ! gl.getShaderParameter(vsh, gl.COMPILE_STATUS) ) {
+      throw new Error("Error in vertex shader:  " + gl.getShaderInfoLog(vsh));
+   }
+   let  fsh = gl.createShader( gl.FRAGMENT_SHADER );
+   gl.shaderSource( fsh, fragmentShaderSource );
+   gl.compileShader( fsh );
+   if ( ! gl.getShaderParameter(fsh, gl.COMPILE_STATUS) ) {
+      throw new Error("Error in fragment shader:  " + gl.getShaderInfoLog(fsh));
+   }
+   let  prog = gl.createProgram();
+   gl.attachShader( prog, vsh );
+   gl.attachShader( prog, fsh );
+   gl.linkProgram( prog );
+   if ( ! gl.getProgramParameter( prog, gl.LINK_STATUS) ) {
+      throw new Error("Link error in program:  " + gl.getProgramInfoLog(prog));
+   }
+   return prog;
+}
+
+/**
+ * Initialize the WebGL graphics context
+ */
+function initGL() {
+    let  prog = createProgram( gl, vertexShaderSource, fragmentShaderSource );
+    gl.useProgram(prog);
+
+    attributeCoords = gl.getAttribLocation(prog, "a_coords");
+    bufferCoords = gl.createBuffer();
+
+    attributeColor = gl.getAttribLocation(prog, "a_color");
+    bufferColor = gl.createBuffer();
+
+    uniformHeight = gl.getUniformLocation(prog, "u_height");
+    uniformWidth = gl.getUniformLocation(prog, "u_width");
+    uniformPointSize = gl.getUniformLocation(prog, "u_pointSize"); 
+    gl.uniform1f(uniformHeight, canvas.height);
+    gl.uniform1f(uniformWidth, canvas.width);
+    gl.uniform1f(uniformPointSize, 10.0);
+   
+    createPointData();
+
+    // Create a buffer for triangle coordinates
+    bufferTriangles = gl.createBuffer();
+    bufferTriangleEdges = gl.createBuffer(); // Create a buffer for triangle edges
+    
+}
+
+/**
+ * Initialize the program.  This function is called after the page has been loaded.
+ */
+function init() {
+    try {
+        canvas = document.getElementById("webglcanvas");
+        let  options = {  // no need for alpha channel or depth buffer in this program
+            alpha: false,
+            depth: false
+        };
+        gl = canvas.getContext("webgl", options);
+              // (Note: this page would work with "webgl2", with no further modification.)
+        if ( ! gl ) {
+            throw "Browser does not support WebGL";
+        }
+    }
+    catch (e) {
+        document.getElementById("canvas-holder").innerHTML =
+            "<p>Sorry, could not get a WebGL graphics context.</p>";
+        return;
+    }
+    try {
+        initGL();  // initialize the WebGL graphics context
+    }
+    catch (e) {
+        document.getElementById("canvas-holder").innerHTML =
+            "<p>Sorry, could not initialize the WebGL graphics context: " + e + "</p>";
+        return;
+    }
+ 
+    draw();
+}
+
+function changePoints() {
+    POINT_COUNT = Number(document.getElementById("pointsInput").value);
+    pointCoords = new Float32Array( 2*POINT_COUNT );
+    pointColors = new Float32Array( 3*POINT_COUNT );
+    triangleCoords = [];
+    triangleColors = [];
+    triangles = [];
+
+    bufferTriangles = []; 
+    bufferTriangleEdges = [];
+    triangleEdges = [];
+    
+    init();
+}
+
+function triangulate() {
+
+    console.log("Triangulating...");
+
+
+     // Sort points by x-coordinate (and by y-coordinate if x-coordinates are the same)
+    let points = [];
+    for (let i = 0; i < POINT_COUNT; i++) {
+        points.push({ x: pointCoords[2 * i], y: pointCoords[2 * i + 1] });
+    }
+    points.sort((a, b) => a.x === b.x ? a.y - b.y : a.x - b.x);
+
+    // Initialize the first triangle with the first three points
+    addTriangle(points[0].x, points[0].y, points[1].x, points[1].y, points[2].x, points[2].y);
+
+    let convexHull = [];
+
+    let angle0 = (points[2].y - points[0].y) / (points[2].x - points[0].x);
+    let angle1 = (points[2].y - points[1].y) / (points[2].x - points[1].x);
+    
+    if (angle1 > angle0) {
+        console.log("Angle 1 is greater than angle 0");
+        convexHull.push(points[0]);
+        convexHull.push(points[1]);
+    }else if (angle1 == angle0) {
+        console.log("Points are collinear");
+        convexHull.push(points[0]);
+        convexHull.push(points[1]);
+    }else {
+        console.log("Angle 0 is greater than angle 1");
+        convexHull.push(points[1]);
+        convexHull.push(points[0]);
+    }
+    
+    convexHull.push(points[2]);
+
+    for (let i = 3; i< points.length; i++) {
+        let newPoint = points[i];
+        let lastPoint = convexHull[convexHull.length - 1];
+        let nextPoint;
+        let currentAngle;
+        let lastAngle;
+
+        console.log("New point: " + newPoint.x + " " + newPoint.y);
+
+        for (const point of convexHull) {
+            console.log(point.x + " " + point.y);
+        }
+
+        let tempConvexHull = convexHull.slice();
+
+        let addedFirstTraingle = false;
+
+
+        for (let j = 1; j < convexHull.length; j++) {
+
+            if (j > 1){
+                lastPoint = convexHull[(convexHull.length - 1 + (j-1)) % convexHull.length];
+            }
+
+            lastAngle = -((lastPoint.y - newPoint.y)/ (lastPoint.x - newPoint.x));
+
+            nextPoint = convexHull[(convexHull.length - 1 + j) % convexHull.length];
+
+
+            currentAngle = -((nextPoint.y - newPoint.y)/ (nextPoint.x - newPoint.x));
+
+            
+            console.log("Current angle: " + currentAngle + " Last angle: " + lastAngle);
+
+            if (currentAngle < lastAngle) {
+                console.log("Breaking1");
+                break;
+            }
+            
+            addTriangle(nextPoint.x, nextPoint.y, lastPoint.x, lastPoint.y, newPoint.x, newPoint.y);
+            if(j==1){
+                tempConvexHull.push(newPoint);
+            }
+            addedFirstTraingle = true;
+            
+            if(j>1){
+                console.log("Removing point: " + lastPoint.x + " " + lastPoint.y);
+                tempConvexHull = tempConvexHull.filter(p => !(p.x === lastPoint.x && p.y === lastPoint.y));
+            }
+           
+        }
+
+        lastPoint = convexHull[convexHull.length - 1];
+
+        for (let j = 1; j < convexHull.length; j++) {
+
+            if (j > 1){
+                lastPoint = convexHull[(convexHull.length - 1 - (j-1)) % convexHull.length];
+            }
+
+            lastAngle = -((lastPoint.y - newPoint.y)/ (lastPoint.x - newPoint.x));
+        
+
+            nextPoint = convexHull[(convexHull.length - 1 - j) % convexHull.length];
+
+            currentAngle = -((nextPoint.y - newPoint.y) / (nextPoint.x - newPoint.x));
+
+            
+            console.log("Current angle: " + currentAngle + " Last angle: " + lastAngle);
+
+            if (currentAngle > lastAngle) {
+                console.log("Breaking2");
+                break;
+            }
+            
+            addTriangle(nextPoint.x, nextPoint.y, lastPoint.x, lastPoint.y, newPoint.x, newPoint.y);  
+            
+            if(!(tempConvexHull[tempConvexHull.length-1] == newPoint)){
+                let lastElement = tempConvexHull.pop();
+                tempConvexHull.unshift(lastElement);
+                if(!addedFirstTraingle){
+                    tempConvexHull.push(newPoint);
+                }
+                
+            }
+
+
+            if(j>1 || addedFirstTraingle){
+                console.log("Removing point: " + lastPoint.x + " " + lastPoint.y);
+                tempConvexHull = tempConvexHull.filter(p => !(p.x === lastPoint.x && p.y === lastPoint.y));
+            }
+           
+        }
+
+
+        convexHull = tempConvexHull.slice();
+
+        console.log("New Convex hull: ");
+        for (const point of convexHull) {
+            console.log(point.x + " " + point.y);
+        }
+
+        
+
+    }
+
+    addPointer();
+
+    
+    triangleCoords = new Float32Array(triangleCoords);
+    triangleColors = new Float32Array(triangleColors);
+    
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferTriangles);
+    gl.bufferData(gl.ARRAY_BUFFER, triangleCoords, gl.STREAM_DRAW);
+    
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferColor);
+    gl.bufferData(gl.ARRAY_BUFFER, triangleColors, gl.STREAM_DRAW);
+    
+    draw();
+}
+
+function addPointer(){
+    let edges = [];
+    
+    // Step 1: Store all edges with pointers to their triangles
+    triangles.forEach((triangle, index) => {
+        triangle.neighbors = []; // Initialize neighbors array
+        let vertices = [triangle.point1, triangle.point2, triangle.point3];
+        edges.push({ x0: vertices[0].x, y0: vertices[0].y, x1: vertices[1].x, y1: vertices[1].y, ptr: index });
+        edges.push({ x0: vertices[1].x, y0: vertices[1].y, x1: vertices[2].x, y1: vertices[2].y, ptr: index });
+        edges.push({ x0: vertices[2].x, y0: vertices[2].y, x1: vertices[0].x, y1: vertices[0].y, ptr: index });
+    });
+    
+    // Step 2: Sort the edges
+    edges.sort((a, b) => {
+        let [ax0, ax1] = [Math.min(a.x0, a.x1), Math.max(a.x0, a.x1)];
+        let [ay0, ay1] = [Math.min(a.y0, a.y1), Math.max(a.y0, a.y1)];
+        let [bx0, bx1] = [Math.min(b.x0, b.x1), Math.max(b.x0, b.x1)];
+        let [by0, by1] = [Math.min(b.y0, b.y1), Math.max(b.y0, b.y1)];
+    
+        if (ax0 !== bx0) return ax0 - bx0;
+        if (ax1 !== bx1) return ax1 - bx1;
+        if (ay0 !== by0) return ay0 - by0;
+        return ay1 - by1;
+    });
+
+
+    // Step 3: Identify neighboring triangles
+    for (let i = 0; i < edges.length - 1; i++) {
+        let edge1 = edges[i];
+        let edge2 = edges[i + 1];
+    
+        if (edge1.x0 - edge2.x0 == 0  && edge1.x1 - edge2.x1 == 0 && edge1.y0 - edge2.y0 == 0  && edge1.y1 - edge2.y1 == 0 ) {
+            // These edges are shared by neighboring triangles
+            triangles[edge1.ptr].neighbors.push(triangles[edge2.ptr]);
+            triangles[edge2.ptr].neighbors.push(triangles[edge1.ptr]);
+        }else if (edge1.x0 - edge2.x1 == 0  && edge1.x1 - edge2.x0 == 0 && edge1.y0 - edge2.y1 == 0  && edge1.y1 - edge2.y0 == 0 ) {
+            // These edges are shared by neighboring triangles
+            triangles[edge1.ptr].neighbors.push(triangles[edge2.ptr]);
+            triangles[edge2.ptr].neighbors.push(triangles[edge1.ptr]);
+        }
+    }
+    
+    // Log edges and neighbors for debugging
+    console.log("Edges:", edges);
+    for (let i = 0; i < triangles.length; i++) {
+        console.log(`Triangle ${i} points to:`);
+        triangles[i].neighbors.forEach(neighbor => {
+            console.log(`  Neighbor Triangle:`, neighbor);
+        });
+    }
+}
+
+function addTriangle(x1, y1, x2, y2, x3, y3) {
+    // Add color data for each vertex of the triangle
+    triangleColors.push(1.0, 0.0, 0.0); // Red color for the first vertex
+    triangleColors.push(1.0, 0.0, 0.0); // Green color for the second vertex
+    triangleColors.push(1.0, 0.0, 0.0); // Blue color for the third vertex
+    // Add coordinates for each vertex of the triangle
+    console.log("Adding triangle: ");
+    console.log(x1, y1, x2, y2, x3, y3);
+    triangleCoords.push(x1, y1);
+    triangleCoords.push(x2, y2);
+    triangleCoords.push(x3, y3);
+
+    let node1 = new point(x1, y1);
+    let node2 = new point(x2, y2);
+    let node3 = new point(x3, y3);
+
+    let triangle1 = new triangle(node1, node2, node3);
+
+    triangles.push(triangle1);
+    
+    // Add edges for the triangle
+    triangleEdges.push(x1, y1, x2, y2);
+    triangleEdges.push(x2, y2, x3, y3);
+    triangleEdges.push(x3, y3, x1, y1);
+}
+
+class point {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+
+class triangle {
+    constructor(p1, p2, p3) {
+        this.point1 = p1;
+        this.point2 = p2;
+        this.point3 = p3;
+        this.neighbors = [];
+    }
+}
+
+function colorTriangles() {
+    // Initialize all triangles as uncolored
+    triangles.forEach(triangle => triangle.color = null);
+
+    // Start coloring from the first triangle
+    if (triangles.length > 0) {
+        colorTriangle(triangles[0]);
+    }
+
+    // Update triangle colors in the buffer
+    triangleColors = [];
+    triangles.forEach(triangle => {
+        let color = getColor(triangle.color);
+        triangleColors.push(...color, ...color, ...color);
+    });
+
+    draw();
+}
+
+function colorTriangle(triangle) {
+    // Temporarily remove the triangle from the graph
+    let neighbors = triangle.neighbors.filter(neighbor => neighbor.color === null);
+
+    // Recursively color the neighbors
+    neighbors.forEach(neighbor => colorTriangle(neighbor));
+
+    // Find a color not used by the neighbors
+    let usedColors = new Set(neighbors.map(neighbor => neighbor.color));
+    let availableColors = [0, 1, 2, 3].filter(color => !usedColors.has(color));
+
+    // Assign the first available color to the triangle
+    triangle.color = availableColors[0];
+}
+
+function getColor(colorIndex) {
+    switch (colorIndex) {
+        case 0: return [1.0, 0.0, 0.0]; // Red
+        case 1: return [0.0, 1.0, 0.0]; // Green
+        case 2: return [0.0, 0.0, 1.0]; // Blue
+        case 3: return [1.0, 1.0, 0.0]; // Yellow
+        default: return [1.0, 1.0, 1.0]; // White (should not happen)
+    }
+}
+
+window.onload = init;  // Arrange for init() to be called after page has loaded.
+
+</script>
+</head>
+<body>
+
+<h2>Triangulation</h2>
+
+<noscript><p><b>Sorry, but this page requires JavaScript.</b></p></noscript>
+
+<p>
+    <label><b>Number of Points:</b>&nbsp;<input type="number" id="pointsInput" value="20"></label>
+    <button onclick="changePoints()">Change Points</button>
+    <button onclick="triangulate()">Triangulate</button>
+    <button onclick="colorTriangles()">Color Triangles</button>
+</p>
+
+
+<div id="canvas-holder">
+<canvas id="webglcanvas" width="800" height="600" ></canvas>
+</div>
+
+</body>
+</html>
