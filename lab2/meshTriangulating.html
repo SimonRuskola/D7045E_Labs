@@ -59,6 +59,8 @@ let triangleCoords = []; // Array to hold triangle coordinates
 let triangles = [];
 
 let bufferTriangles; // Buffer for triangle coordinates
+let bufferTriangleEdges; // Buffer for triangle edges
+let triangleEdges = []; // Array to hold triangle edges
 let uniformPointSize;
 
 function createPointData() { // called during initialization to fill the arrays with data.
@@ -111,6 +113,21 @@ function draw() {
         gl.enableVertexAttribArray(attributeColor);
 
         gl.drawArrays(gl.TRIANGLES, 0, triangleCoords.length / 2);
+
+        // Draw triangle edges
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufferTriangleEdges);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(triangleEdges), gl.STREAM_DRAW);
+        gl.vertexAttribPointer(attributeCoords, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(attributeCoords);
+
+        // Set edge color to black
+        let edgeColors = new Float32Array(triangleEdges.length / 2 * 3).fill(0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufferColor);
+        gl.bufferData(gl.ARRAY_BUFFER, edgeColors, gl.STREAM_DRAW);
+        gl.vertexAttribPointer(attributeColor, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(attributeColor);
+
+        gl.drawArrays(gl.LINES, 0, triangleEdges.length / 2);
     }
     
 }
@@ -162,6 +179,7 @@ function initGL() {
 
     // Create a buffer for triangle coordinates
     bufferTriangles = gl.createBuffer();
+    bufferTriangleEdges = gl.createBuffer(); // Create a buffer for triangle edges
     
 }
 
@@ -419,8 +437,8 @@ function addPointer(){
 function addTriangle(x1, y1, x2, y2, x3, y3) {
     // Add color data for each vertex of the triangle
     triangleColors.push(1.0, 0.0, 0.0); // Red color for the first vertex
-    triangleColors.push(0.0, 1.0, 0.0); // Green color for the second vertex
-    triangleColors.push(0.0, 0.0, 1.0); // Blue color for the third vertex
+    triangleColors.push(1.0, 0.0, 0.0); // Green color for the second vertex
+    triangleColors.push(1.0, 0.0, 0.0); // Blue color for the third vertex
     // Add coordinates for each vertex of the triangle
     console.log("Adding triangle: ");
     console.log(x1, y1, x2, y2, x3, y3);
@@ -436,6 +454,10 @@ function addTriangle(x1, y1, x2, y2, x3, y3) {
 
     triangles.push(triangle1);
     
+    // Add edges for the triangle
+    triangleEdges.push(x1, y1, x2, y2);
+    triangleEdges.push(x2, y2, x3, y3);
+    triangleEdges.push(x3, y3, x1, y1);
 }
 
 class point {
