@@ -453,9 +453,9 @@ function addPointer(){
 
 function addTriangle(x1, y1, x2, y2, x3, y3) {
     // Add color data for each vertex of the triangle
-    triangleColors.push(1.0, 0.0, 0.0); // Red color for the first vertex
-    triangleColors.push(1.0, 0.0, 0.0); // Green color for the second vertex
-    triangleColors.push(1.0, 0.0, 0.0); // Blue color for the third vertex
+    //triangleColors.push(1.0, 0.0, 0.0); // Red color for the first vertex
+    //triangleColors.push(1.0, 0.0, 0.0); // Green color for the second vertex
+    //triangleColors.push(1.0, 0.0, 0.0); // Blue color for the third vertex
     // Add coordinates for each vertex of the triangle
     console.log("Adding triangle: ");
     console.log(x1, y1, x2, y2, x3, y3);
@@ -492,6 +492,7 @@ class triangle {
         this.point3 = p3;
         this.neighbors = [];
         this.color = null;
+        this.done = false;
     }
 }
 
@@ -501,6 +502,7 @@ function colorTriangles() {
 
     // Start coloring from the first triangle
     if (triangles.length > 0) {
+        triangles[0].color = 0;
         colorTriangle(triangles[0]);
     }
 
@@ -513,20 +515,41 @@ function colorTriangles() {
 }
 
 function colorTriangle(triangle) {
-    // Find a color not used by the neighbors
-    let usedColors = new Set(triangle.neighbors.map(neighbor => neighbor.color));
-    console.log("Used colors: ", usedColors);
-    let availableColors = [0, 1, 2, 3].filter(color => !usedColors.has(color));
-
-    // Assign the first available color to the triangle
-    triangle.color = availableColors[0];
-
+    triangle.done = true;
+    
+    let colorsPrevousTriangle;
     // Recursively color the neighbors
     triangle.neighbors.forEach(neighbor => {
-        if (neighbor.color === null) {
-            colorTriangle(neighbor);
+        if (neighbor.done === false && neighbor.color === null) {
+            colorsPrevousTriangle = colorTriangle(neighbor);
         }
     });
+    
+    // Find a color not used by the neighbors or the triangle itself
+    let usedColors = new Set(triangle.neighbors.map(neighbor => neighbor.color));
+    let availableColors = [0, 1, 2, 3].filter(color => !usedColors.has(color));
+
+    console.log("colorsPrevousTriangle ", colorsPrevousTriangle);
+    if (colorsPrevousTriangle !== undefined){
+        availableColors = availableColors.filter(color => !colorsPrevousTriangle.includes(color));
+    }
+    
+    console.log("triangle: ", triangle);
+    console.log("Available colors: ", availableColors);
+
+    triangle.color = availableColors[0];
+    availableColors.shift();
+
+    return availableColors;
+
+    
+
+  /*   // Assign the first available colors to the neighbors
+    triangle.neighbors.forEach(neighbor => {
+        if (neighbor.color === null) {
+            neighbor.color = availableColors.shift();
+        }
+    }); */
 }
 
 function getColor(colorIndex) {
