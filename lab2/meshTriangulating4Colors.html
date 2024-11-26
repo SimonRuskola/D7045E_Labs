@@ -493,6 +493,7 @@ class triangle {
         this.neighbors = [];
         this.color = null;
         this.done = false;
+        this.usedColors = [];
     }
 }
 
@@ -502,7 +503,6 @@ function colorTriangles() {
 
     // Start coloring from the first triangle
     if (triangles.length > 0) {
-        triangles[0].color = 0;
         colorTriangle(triangles[0]);
     }
 
@@ -517,30 +517,46 @@ function colorTriangles() {
 function colorTriangle(triangle) {
     triangle.done = true;
     
-    let colorsPrevousTriangle;
     // Recursively color the neighbors
     triangle.neighbors.forEach(neighbor => {
         if (neighbor.done === false && neighbor.color === null) {
-            colorsPrevousTriangle = colorTriangle(neighbor);
+            colorTriangle(neighbor);
+            triangle.usedColors.push(neighbor.color);
         }
     });
     
     // Find a color not used by the neighbors or the triangle itself
     let usedColors = new Set(triangle.neighbors.map(neighbor => neighbor.color));
-    let availableColors = [0, 1, 2, 3].filter(color => !usedColors.has(color));
 
-    console.log("colorsPrevousTriangle ", colorsPrevousTriangle);
-    if (colorsPrevousTriangle !== undefined){
-        availableColors = availableColors.filter(color => !colorsPrevousTriangle.includes(color));
-    }
-    
-    console.log("triangle: ", triangle);
-    console.log("Available colors: ", availableColors);
+    triangle.neighbors.forEach(neighbor => {
+        if(neighbor.usedColors !== undefined){
+            neighbor.usedColors.forEach(color => usedColors.add(color));
+        }
+    });
+    let availableColors = [1, 2, 3, 4].filter(color => !usedColors.has(color));
 
     triangle.color = availableColors[0];
-    availableColors.shift();
 
-    return availableColors;
+    console.log("Triangle color: ", triangle.color);
+
+    triangle.usedColors.push(availableColors[0]);
+
+    triangle.neighbors.forEach(neighbor => {
+        if (neighbor.color !== null) {
+            triangle.usedColors.push(neighbor.color);
+        }
+    });
+
+    console.log("Triangle used colors: ", triangle.usedColors);
+
+    triangle.neighbors.forEach(neighbor => {
+        
+        neighbor.usedColors.push(triangle.color);
+        
+    });
+
+ 
+    return 
 
     
 
@@ -554,10 +570,10 @@ function colorTriangle(triangle) {
 
 function getColor(colorIndex) {
     switch (colorIndex) {
-        case 0: return [1.0, 0.0, 0.0]; // Red
-        case 1: return [0.0, 1.0, 0.0]; // Green
-        case 2: return [0.0, 0.0, 1.0]; // Blue
-        case 3: return [1.0, 1.0, 0.0]; // Yellow
+        case 1: return [1.0, 0.0, 0.0]; // Red
+        case 2: return [0.0, 1.0, 0.0]; // Green
+        case 3: return [0.0, 0.0, 1.0]; // Blue
+        case 4: return [1.0, 1.0, 0.0]; // Yellow
         default: return [1.0, 1.0, 1.0]; // White (should not happen)
     }
 }
