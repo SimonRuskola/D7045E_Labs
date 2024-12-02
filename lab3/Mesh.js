@@ -6,3 +6,9 @@ index data describing the mesh, and create (via WebGL/OpenGL calls)
 ○ a Vertex Buffer handle, and
 ○ an Element Array Buffer handle (index buffer).
 ● It also sets up vertex attribute pointers accordingly. */
+
+class Mesh {
+    constructor() {
+       
+    }
+}
