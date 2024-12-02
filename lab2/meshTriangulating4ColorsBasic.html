@@ -492,17 +492,11 @@ class triangle {
         this.point3 = p3;
         this.neighbors = [];
         this.color = null;
-        this.done = false;
+        this.visited = false;
     }
 }
 
 function colorTriangles() {
-    // Initialize all triangles as uncolored
-    triangles.forEach(triangle => {
-        triangle.color = null;
-        triangle.done = false;
-    });
-
     // Start coloring from the first triangle
     if (triangles.length > 0) {
         colorTriangle(triangles[0]);
@@ -517,29 +511,29 @@ function colorTriangles() {
 }
 
 function colorTriangle(triangle) {
-    if (triangle.done) return;
-    triangle.done = true;
+    if (triangle.visited) return;
 
-    // Temporarily remove T from the graph
-    let neighbors = triangle.neighbors.slice();
-    triangle.neighbors = [];
+    triangle.visited = true;
 
-    // Recursively color the neighbors
-    neighbors.forEach(neighbor => {
-        if (!neighbor.done) {
+
+    // Recursively color all uncolored neighbors
+    triangle.neighbors.forEach(neighbor => {
+        if (neighbor.visited == false) {
             colorTriangle(neighbor);
         }
     });
 
-    // Find a color not used by the neighbors
-    let usedColors = new Set(neighbors.map(neighbor => neighbor.color));
+    // Find a color not used by neighbors
+    let usedColors = new Set(triangle.neighbors.map(neighbor => neighbor.color));
+    
     let availableColors = [1, 2, 3, 4].filter(color => !usedColors.has(color));
 
-    // Assign the first available color to the triangle
-    triangle.color = availableColors[0];
 
-    // Add T back into the graph
-    triangle.neighbors = neighbors;
+    let randomColor = availableColors[Math.floor(Math.random() * availableColors.length)];
+
+    triangle.color = randomColor;
+
+  
 }
 
 function getColor(colorIndex) {
