@@ -11,3 +11,14 @@ shader.)
 b. An abstract (not implemented) method ApplyMaterial that subclasses should
 implement to get the shaders fitted with uniforms before a draw call can be
 issued.  */
+
+class Material {
+    constructor(shaderProgram) {
+      this.shaderProgram = shaderProgram;
+    }
+  
+    applyMaterial() {
+      throw new Error("not yet implemented in subclass");
+    }
+  
+  }
