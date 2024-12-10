@@ -24,12 +24,13 @@ function init() {
 
   camera = new Camera(gl, shader.getProgram());
 
-  var monoBlue = new MonochromeMaterial(gl, vec4(0,1, 1, 1.0), shader);
-  var monoGreen = new MonochromeMaterial(gl, vec4(0.0, 1.0, 0, 1.0), shader);
+  var cubeColor = new MonochromeMaterial(gl, vec4(0.5 , 0, 0.5, 1), shader);
+
+  var movingCubeColor = new MonochromeMaterial(gl, vec4(1, 1, 1, 1), shader);
   
   var cubiodMesh = new Cuboid(0.5, 0.5, 0.5, gl, shader.getProgram());
 
-  movingCubiod = new GraphicsNode(gl, cubiodMesh, monoGreen, movingCubiodTransform);
+  movingCubiod = new GraphicsNode(gl, cubiodMesh, cubeColor, movingCubiodTransform);
 
   var maxX = 15;
   var minX = -15;
@@ -43,7 +44,7 @@ function init() {
     var z = Math.floor(Math.random() * (maxZ - minZ)) + minZ;
     var transform = mat4(1,0,0,x, 0,1,0,y, 0,0,1,z, 0,0,0,1);
 
-    var cube = new GraphicsNode(gl, cubiodMesh, monoBlue, transform);
+    var cube = new GraphicsNode(gl, cubiodMesh, movingCubeColor, transform);
 
     cubes.push(cube);
   }
@@ -64,39 +65,31 @@ function render() {
 }
 
 window.addEventListener('keydown', function(event) {
-    //increase y
-    if(event.keyCode == 87) { //W
+    if(event.keyCode == 87) { 
         movingCubiodTransform = add(movingCubiodTransform, mat4(0,0,0,0, 0,0,0,0.1, 0,0,0,0, 0,0,0,0));
         movingCubiod.updateTransform(movingCubiodTransform);
 
-    //decrease x
-    } else if(event.keyCode == 65) { //A
+    } else if(event.keyCode == 65) { 
       movingCubiodTransform = add(movingCubiodTransform, mat4(0,0,0,-0.1, 0,0,0,0, 0,0,0,0, 0,0,0,0));
       movingCubiod.updateTransform(movingCubiodTransform);
 
-    //decrease y
-    } else if(event.keyCode == 83) { //S
+    } else if(event.keyCode == 83) { 
       movingCubiodTransform = add(movingCubiodTransform, mat4(0,0,0,0, 0,0,0,-0.1, 0,0,0,0, 0,0,0,0));
       movingCubiod.updateTransform(movingCubiodTransform);
 
-    //increase x
-    } else if(event.keyCode == 68) { //D
+    } else if(event.keyCode == 68) {
       movingCubiodTransform = add(movingCubiodTransform, mat4(0,0,0,0.1, 0,0,0,0, 0,0,0,0, 0,0,0,0));
       movingCubiod.updateTransform(movingCubiodTransform);
 
-    //decrease z
-    } else if(event.keyCode == 69) { //E
+    } else if(event.keyCode == 69) { 
       movingCubiodTransform = add(movingCubiodTransform, mat4(0,0,0,0, 0,0,0,0, 0,0,0,-0.1, 0,0,0,0));
       movingCubiod.updateTransform(movingCubiodTransform);
-      //console.log(testTransform[2][3])
-
-    //increase z
-    } else if(event.keyCode == 67) { //C
+      
+    } else if(event.keyCode == 81) { 
       movingCubiodTransform = add(movingCubiodTransform, mat4(0,0,0,0, 0,0,0,0, 0,0,0,0.1, 0,0,0,0));
       movingCubiod.updateTransform(movingCubiodTransform);
     }
 
-    //render with updated position for green cube
     render();
 });
 
