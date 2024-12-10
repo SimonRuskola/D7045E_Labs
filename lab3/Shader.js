@@ -9,13 +9,11 @@ shader. There should be a method that returns the type ((for instance, as an enu
 
 class Shader {
     constructor(gl, shaderType, source) {
-        /*create the shader*/
+        
         this.shader = gl.createShader(shaderType);
-        /*upload the shader source*/
         gl.shaderSource(this.shader, document.getElementById(source).text);
-        /*compile the shader*/
         gl.compileShader(this.shader)
-        /*check if the shader compiled*/
+    
         if (!gl.getShaderParameter(this.shader, gl.COMPILE_STATUS)) {
             alert("Error compiling shader: " + gl.getShaderInfoLog(this.shader));
             gl.deleteShader(this.shader);

@@ -8,52 +8,38 @@ index data describing the mesh, and create (via WebGL/OpenGL calls)
 ● It also sets up vertex attribute pointers accordingly. */
 
 class Mesh {
+
     constructor(gl, vertices, indices, shaderProgram) {
-        this.gl = gl;
+
         this.vertices = vertices;
         this.indices = indices;
-        /*vertex array object handle, this.vertexArray gets the value of a WebGLVertexArrayObject
-        representing a vertex array object (VAO) which points to vertex array data*/
-        this.vertexArray = this.gl.createVertexArray();
+  
+       
+        this.vertexArray = gl.createVertexArray();
+        gl.bindVertexArray(this.vertexArray);
 
-        
-        this.gl.bindVertexArray(this.vertexArray);
-
-        /*vertex buffer handle*/
-        this.vertexBuffer = this.gl.createBuffer();
-
-        /*bind the vertex buffer*/
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
-
-        /*send the array of vertices to the GPU*/
-        //this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.vertices), this.gl.STATIC_DRAW);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, flatten(this.vertices), this.gl.STATIC_DRAW);
-
-        /*index buffer handle*/
-        this.indexBuffer = this.gl.createBuffer();
-
-        /*bind the index buffer, using ELEMENT_ARRAY_BUFFER to identify the array as an array of indices*/
-        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-
-        /*send the array of indices to the GPU*/
-        this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(this.indices), this.gl.STATIC_DRAW);
-
-
-        this.vPosition = this.gl.getAttribLocation(shaderProgram, "vPosition");
-        this.gl.vertexAttribPointer(this.vPosition, 4, this.gl.FLOAT, false, 0, 0);
-        this.gl.enableVertexAttribArray(this.vPosition);
-
+        this.vertexBuffer = gl.createBuffer();
+    
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(this.vertices), gl.STATIC_DRAW);
+        this.indexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(this.indices), gl.STATIC_DRAW);
+    
+        this.vPosition = gl.getAttribLocation(shaderProgram, "vPosition");
+        gl.vertexAttribPointer(this.vPosition, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vPosition);
     }
-
-    getVertexArray() {
-        return this.vertexArray;
-    }
-
+  
     getVertices() {
         return this.vertices;
     }
-
     getIndices() {
         return this.indices;
     }
-}
+    getVertexArray() {
+        return this.vertexArray;
+    }
+  
+  
+  }

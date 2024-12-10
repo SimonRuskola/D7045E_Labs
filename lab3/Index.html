@@ -1,56 +1,47 @@
 <!DOCTYPE html>
-
 <html>
 <head>
     <title>Lab 3</title>
-</head>
-<body>
-    <h1>Lab 3</h1>
+    <meta charset="UTF-8">
 
-    <noscript><p><b>Sorry, but this page requires JavaScript.</b></p></noscript>
+    <script  type="x-shader/x-vertex" id="vertex-shader">
+    attribute vec4 vPosition;
+    uniform mat4 tMatrix;
+    uniform mat4 vMatrix;
+    uniform mat4 pMatrix;
 
-    <script type="x-shader/x-vertex" id="vertex-shader">
-        attribute vec4 vPosition;
-        uniform mat4 tMatrix;
-        uniform mat4 vMatrix;
-        uniform mat4 pMatrix;
+    void main()
+    {
+      gl_Position = pMatrix * vMatrix * tMatrix * vPosition;
+    }
 
-        void main()
-        {
-            gl_Position = pMatrix * vMatrix * tMatrix * vPosition;
-        }
     </script>
 
-    <script id="fragment-shader" type="x-shader/x-fragment">
+    <script type="x-shader/x-fragment" id="fragment-shader" >
+    precision mediump float;
+    uniform vec4 fColor;
 
-        precision mediump float;
-           
-        varying vec4 fColor;
-        
-        void
-        main()
-        {
-            gl_FragColor = fColor;
-        }
+    void main() {
+        gl_FragColor = fColor;
+    }
     </script>
-    
-    <script type="text/javascript" src="MV.js"></script>
+
     <script type="text/javascript" src="webgl-utils.js"></script>
-    <script type="text/javascript" src="Mesh.js"></script>
+    <script type="text/javascript" src="MV.js"></script>
+    <script type="text/javascript" src="mesh.js"></script>
+    <script type="text/javascript" src="shader.js"></script>
+    <script type="text/javascript" src="shaderProgram.js"></script>
+    <script type="text/javascript" src="material.js"></script>
+    <script type="text/javascript" src="graphicsNode.js"></script>
+    <script type="text/javascript" src="monochromeMaterial.js"></script>
     <script type="text/javascript" src="Cuboid.js"></script>
-    <script type="text/javascript" src="Shader.js"></script>
-    <script type="text/javascript" src="ShaderProgram.js"></script>
-    <script type="text/javascript" src="GraphicsNode.js"></script>
-    <script type="text/javascript" src="Material.js"></script>
-    <script type="text/javascript" src="MonochromeMaterial.js"></script>
     <script type="text/javascript" src="Camera.js"></script>
     <script type="text/javascript" src="Main.js"></script>
-
-
-    <div id="canvas-holder">
-        <canvas id="webglcanvas" width="800" height="600" ></canvas>
-    </div>
-    
+</head>
+<body>
+    <center><canvas id="gl-canvas" width="1700px" height="900px">
+        Oops ... your browser doesn't support the HTML5 canvas element
+    </canvas>  </center>
+    <br />
 </body>
 </html>
-```

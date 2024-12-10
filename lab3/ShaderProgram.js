@@ -15,7 +15,6 @@ class ShaderProgram {
         this.gl.linkProgram(this.program);
     }
   
-    /*a method that activates the GL shader program (via glUseProgram)*/
     activateShader() {
         this.gl.useProgram(this.program);
     }
