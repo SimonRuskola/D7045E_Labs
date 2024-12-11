@@ -7,8 +7,6 @@ the ApplyMaterial method of the material, and then executes a draw call.
 of the graphics node. The method gets the change in the form of a transform (4x4
 matrix) and changes its internal model matrix by multiplying them.  */
 
-
-
 class GraphicsNode {
   constructor(gl, mesh, material, transform) {
     this.gl = gl;
@@ -19,11 +17,15 @@ class GraphicsNode {
 
   draw() {
     this.material.applyMaterial(this.transform);
-    this.gl.drawElements(this.gl.TRIANGLES, this.mesh.getIndices().length, this.gl.UNSIGNED_BYTE, 0);
+    this.gl.drawElements(
+      this.gl.TRIANGLES,
+      this.mesh.getIndices().length,
+      this.gl.UNSIGNED_BYTE,
+      0
+    );
   }
 
   setTransform(transform) {
     this.transform = transform;
   }
-
 }

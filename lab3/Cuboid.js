@@ -10,33 +10,29 @@ class Cuboid extends Mesh {
         const d = depth / 2;
 
         const vertices = [
-            vec4(-w, -h, d, 1),
-            vec4(-w, h, d, 1),
-            vec4(w, h, d, 1),
-            vec4(w, -h, d, 1),
-            vec4(-w, -h, -d, 1),
-            vec4(-w, h, -d, 1),
-            vec4(w, h, -d, 1),
-            vec4(w, -h, -d, 1)
+            vec4(-w, -h, d, 1), vec4(-w, h, d, 1),
+            vec4(w, h, d, 1), vec4(w, -h, d, 1),
+            vec4(-w, -h, -d, 1), vec4(-w, h, -d, 1),
+            vec4(w, h, -d, 1), vec4(w, -h, -d, 1)
         ];
 
         const indices = [
-            0, 1, 2,
+            0, 1, 2, 
             2, 3, 0,
-        
-            2, 3, 7,
+
+            2, 3, 7, 
             7, 6, 2,
-        
-            3, 0, 4,
+
+            3, 0, 4, 
             4, 7, 3,
-        
-            6, 5, 7,
+
+            6, 5, 7, 
             1, 2, 6,
-        
-            4, 5, 6,
+
+            4, 5, 6, 
             6, 7, 4,
-            
-            5, 4, 0,
+
+            5, 4, 0, 
             0, 1, 5
         ];
 

@@ -12,12 +12,12 @@ class ShaderProgram {
         this.gl.attachShader(this.program, vertexShader);
         this.gl.linkProgram(this.program);
     }
-  
+
     activateShader() {
         this.gl.useProgram(this.program);
     }
-  
+
     getProgram() {
         return this.program;
     }
-  }
+}
