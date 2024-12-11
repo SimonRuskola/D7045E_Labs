@@ -6,16 +6,15 @@ send the color to the program as a uniform. */
 
 class MonochromeMaterial extends Material {
 
-    constructor(gl, color, shader) {
-      super(shader.program);
-      this.gl = gl;
-      this.color = color;
-      this.fColorLocation = null;
-      this.shader = shader;
-    }
+  constructor(gl, color, shader) {
+    super(shader.program);
+    this.gl = gl;
+    this.color = color;
+    this.fColorLocation = null;
+    this.shader = shader;
+  }
   
-    applyMaterial(transform) {
-  
+  applyMaterial(transform) {
       var tMatrix = this.gl.getUniformLocation(this.shader.program, "tMatrix");
       this.gl.uniformMatrix4fv(tMatrix, false, flatten(transform));
   
@@ -24,14 +23,12 @@ class MonochromeMaterial extends Material {
   
       var shadedColor=[];
    
-      if(distance == 1) {
-        this.gl.uniform4fv(this.fColorLocation, flatten(this.color));
-      } else {
-        shadedColor[0] = this.color[0] * (1/(1-distance));
-        shadedColor[1] = this.color[1] * (1/(1-distance));
-        shadedColor[2] = this.color[2] * (1/(1-distance));
+      if (distance != 1) {
+        shadedColor[0] = this.color[0] * (1 / (1 - distance));
+        shadedColor[1] = this.color[1] * (1 / (1 - distance));
+        shadedColor[2] = this.color[2] * (1 / (1 - distance));
         shadedColor[3] = 1;
-        this.gl.uniform4fv(this.fColorLocation, flatten(shadedColor));
       }
-    }
+      this.gl.uniform4fv(this.fColorLocation, flatten(shadedColor));
   }
+}

@@ -8,10 +8,8 @@ class ShaderProgram {
     constructor(gl, vertexShader, fragmentShader) {
         this.gl = gl;
         this.program = gl.createProgram();
-        this.vertexShader = vertexShader;
-        this.fragmentShader = fragmentShader;
-        this.gl.attachShader(this.program, this.fragmentShader);
-        this.gl.attachShader(this.program, this.vertexShader);
+        this.gl.attachShader(this.program, fragmentShader);
+        this.gl.attachShader(this.program, vertexShader);
         this.gl.linkProgram(this.program);
     }
   

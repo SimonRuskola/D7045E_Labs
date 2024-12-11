@@ -22,7 +22,7 @@ class GraphicsNode {
     this.gl.drawElements(this.gl.TRIANGLES, this.mesh.getIndices().length, this.gl.UNSIGNED_BYTE, 0);
   }
 
-  updateTransform(transform) {
+  setTransform(transform) {
     this.transform = transform;
   }
 
