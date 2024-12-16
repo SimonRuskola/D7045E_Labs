@@ -23,7 +23,7 @@ function init() {
   let cubeColor = new MonochromeMaterial(gl, vec4(0.5, 0, 0.5, 1), shader);
   let movingCubeColor = new MonochromeMaterial(gl, vec4(1, 1, 1, 1), shader);
   //let cubiodMesh = new Cuboid(0.5, 0.5, 0.5, gl, shader.getProgram());
-  let cubiodMesh = new Torus(0.3, 1,  gl, shader.getProgram());
+  let cubiodMesh = new Star(10, 0.2, 0.5, 1,  gl, shader.getProgram());
 
   movingCubeTransform = mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 5, 0, 0, 0, 1);
   movingCube = new GraphicsNode(gl, cubiodMesh, cubeColor, movingCubeTransform);
