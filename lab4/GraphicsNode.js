@@ -13,19 +13,37 @@ class GraphicsNode {
     this.material = material;
     this.mesh = mesh;
     this.transform = transform;
+    this.children = [];
   }
 
-  draw() {
-    this.material.applyMaterial(this.transform);
-    this.gl.drawElements(
-      this.gl.TRIANGLES,
-      this.mesh.getIndices().length,
-      this.gl.UNSIGNED_BYTE,
-      0
-    );
+  draw(parentTransform = mat4(1)) {
+    // Combine the parent transform with the node's transform
+    let combinedTransform = mult(parentTransform, this.transform);
+
+    if (this.material != null) {
+      this.material.applyMaterial(combinedTransform);
+      this.gl.drawElements(
+        this.gl.TRIANGLES,
+        this.mesh.getIndices().length,
+        this.gl.UNSIGNED_BYTE,
+        0
+      );
+    }
+
+    for (let child of this.children) {
+      child.draw(combinedTransform);
+    }
+  }
+
+  addChild(node) {
+    this.children.push(node);
   }
 
   setTransform(transform) {
     this.transform = transform;
   }
 }
+
+
+
+  

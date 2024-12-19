@@ -5,6 +5,7 @@ let movingCube;
 let movingCubeTransform;
 let camera;
 let shader;
+let sceneGraph = new SceneGraph();
 
 function init() {
   canvas = document.getElementById("gl-canvas");
@@ -20,71 +21,60 @@ function init() {
 
   camera = new Camera(gl, shader.getProgram());
 
-  let cubeColor = new MonochromeMaterial(gl, vec4(0.5, 0, 0.5, 1), shader);
-  let movingCubeColor = new MonochromeMaterial(gl, vec4(1, 1, 1, 1), shader);
-  //let cubiodMesh = new Cuboid(0.5, 0.5, 0.5, gl, shader.getProgram());
-  let cubiodMesh = new Star(10, 0.2, 0.5, 0.3,  gl, shader.getProgram());
-
-  movingCubeTransform = mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 5, 0, 0, 0, 1);
-  movingCube = new GraphicsNode(gl, cubiodMesh, cubeColor, movingCubeTransform);
-
-  let maxX = 15;
-  let minX = -15;
-  let maxY = 15;
-  let minY = -15;
-  let maxZ = 0;
-  let minZ = -50;
-
-  for (let i = 0; i <= 500; i++) {
-    let x = Math.floor(Math.random() * (maxX - minX)) + minX;
-    let y = Math.floor(Math.random() * (maxY - minY)) + minY;
-    let z = Math.floor(Math.random() * (maxZ - minZ)) + minZ;
-    let transform = mat4(1, 0, 0, x, 0, 1, 0, y, 0, 0, 1, z, 0, 0, 0, 1);
-
-    let cube = new GraphicsNode(gl, cubiodMesh, movingCubeColor, transform);
-    cubes.push(cube);
-  }
+  createScene();
 
   render();
 }
 
 function render() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
   shader.activateShader();
   camera.activate();
 
-  movingCube.draw();
+  sceneGraph.draw();
 
-  for (let i = 0; i < cubes.length; i++) {
-    cubes[i].draw();
-  }
 
   requestAnimationFrame(render);
+
+
+  
 }
 
-/* window.addEventListener('keydown', function(event) {
-  switch (event.keyCode) {
-    case 87: // W
-      movingCubeTransform = add(movingCubeTransform, mat4(0, 0, 0, 0, 0, 0, 0, 0.1, 0, 0, 0, 0, 0, 0, 0, 0));
-      break;
-    case 65: // A
-      movingCubeTransform = add(movingCubeTransform, mat4(0, 0, 0, -0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
-      break;
-    case 83: // S
-      movingCubeTransform = add(movingCubeTransform, mat4(0, 0, 0, 0, 0, 0, 0, -0.1, 0, 0, 0, 0, 0, 0, 0, 0));
-      break;
-    case 68: // D
-      movingCubeTransform = add(movingCubeTransform, mat4(0, 0, 0, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
-      break;
-    case 69: // E
-      movingCubeTransform = add(movingCubeTransform, mat4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0.1, 0, 0, 0, 0));
-      break;
-    case 81: // Q
-      movingCubeTransform = add(movingCubeTransform, mat4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.1, 0, 0, 0, 0));
-      break;
+function createScene() {
+  let rootNode = new GraphicsNode(gl, null, null, mat4(1)); // Root node with identity transform
+
+  let whiteMaterial = new MonochromeMaterial(gl, vec4(1, 1, 1, 1), shader);
+  let blackMaterial = new MonochromeMaterial(gl, vec4(0, 0, 0, 1), shader);
+
+  let cubiodMesh = new Cuboid(0.3, 0.3, 0.3, gl, shader.getProgram());
+
+  // Create chessboard floor
+  let floorSize = 8;
+  let cubeSize = 0.3;
+  let spacing = 0.001; // Add spacing between cubes
+  let chessboardNode = new GraphicsNode(gl, null, null, mat4(1)); // Parent node for the chessboard
+
+  for (let i = 0; i < floorSize; i++) {
+    for (let j = 0; j < floorSize; j++) {
+      let x = (i - floorSize / 2) * (cubeSize + spacing);
+      let z = (j - floorSize / 2) * (cubeSize + spacing);
+      let y = -2; // Adjust the z position to place the floor at the bottom of the scene
+      let transform = mat4(1, 0, 0, x, 0, 1, 0, y, 0, 0, 1, z, 0, 0, 0, 1);
+      let material = (i + j) % 2 === 0 ? whiteMaterial : blackMaterial;
+      let cube = new GraphicsNode(gl, cubiodMesh, material, transform);
+      chessboardNode.addChild(cube); // Attach cube to the chessboard node
+    }
   }
-  movingCube.setTransform(movingCubeTransform);
-  render();
-}); */
+
+  rootNode.addChild(chessboardNode); // Attach chessboard node to the root node
+
+  // Set the root node's transform to place it in the scene
+  rootNode.setTransform(mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1));
+
+  // Add the root node to the scene graph or render it directly
+  sceneGraph.addNode(rootNode);
+}
+
 
 window.onload = init;
