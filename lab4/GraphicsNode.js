@@ -21,6 +21,7 @@ class GraphicsNode {
     let combinedTransform = mult(parentTransform, this.transform);
 
     if (this.material != null) {
+      gl.bindVertexArray(this.mesh.getVertexArray());
       this.material.applyMaterial(combinedTransform);
       this.gl.drawElements(
         this.gl.TRIANGLES,
@@ -29,6 +30,8 @@ class GraphicsNode {
         0
       );
     }
+
+    gl.bindVertexArray(null);
 
     for (let child of this.children) {
       child.draw(combinedTransform);

@@ -11,6 +11,7 @@ class Mesh {
     constructor(gl, vertices, indices, shaderProgram) {
         this.vertices = vertices;
         this.indices = indices;
+        this.gl = gl;
 
         // Create and bind the Vertex Array Object
         this.vertexArray = gl.createVertexArray();
@@ -26,14 +27,12 @@ class Mesh {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(this.indices), gl.STATIC_DRAW);
 
-        // Set up vertex attribute pointers
-        this.setupVertexAttributes(gl, shaderProgram);
-    }
-
-    setupVertexAttributes(gl, shaderProgram) {
         let vPosition = gl.getAttribLocation(shaderProgram, "vPosition");
         gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vPosition);
+
+        // Unbind the Vertex Array Object to prevent accidental modification
+        gl.bindVertexArray(null);
     }
 
     getVertices() {

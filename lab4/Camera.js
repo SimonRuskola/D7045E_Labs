@@ -12,12 +12,12 @@ class Camera {
     this.shaderProgram = shaderProgram;
 
     // Camera parameters
-    this.radius = 10;
+    this.radius = 4;
     this.theta = 0.0;
-    this.fieldOfView = 45;
+    this.fieldOfView = 40;
     this.aspect = gl.canvas.width / gl.canvas.height;
     this.near = 1;
-    this.far = 1000;
+    this.far = 100;
 
     // Camera position and orientation
     this.eye = vec3(
@@ -25,7 +25,7 @@ class Camera {
       this.radius * Math.sin(this.theta) * Math.sin(Math.PI),
       this.radius * Math.cos(this.theta)
     );
-    this.at = vec3(0.0, 1.0, 0.0);
+    this.at = vec3(0.0, -1.6, 0.0);
     this.up = vec3(0.0, 1.0, 0.0);
 
     // View and projection matrices
