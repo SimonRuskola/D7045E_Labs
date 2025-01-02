@@ -7,18 +7,46 @@ let camera;
 let shader;
 let sceneGraph = new SceneGraph();
 
+let lightPositionX = 0.0;
+let lightPositionY = -1;
+let lightPositionZ = 0.0;
+
+let robotNode;
+let robotPosition = 0;
+let robotDirection = 0.2;
+let robotSpeed = 0.01;
+
 function init() {
   canvas = document.getElementById("gl-canvas");
   gl = canvas.getContext("webgl2");
 
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clearColor(1.0, 0.6, 0.2, 1.0);
-  gl.enable(gl.DEPTH_TEST);
+  
 
   let fragmentShader = new Shader(gl, gl.FRAGMENT_SHADER, "fragment-shader");
   let vertexShader = new Shader(gl, gl.VERTEX_SHADER, "vertex-shader");
   shader = new ShaderProgram(gl, vertexShader.getShader(), fragmentShader.getShader());
 
+  // Activate the shader program before setting uniforms
+  shader.activateShader();
+
+  // Set up lighting uniforms
+  let ambientColor = vec4(0.2, 0.2, 0.2, 1.0);
+  let diffuseColor = vec4(1.0, 1.0, 1.0, 1.0);
+  let specularColor = vec3(1.0, 1.0, 1.0);
+  let lightPosition = vec4(lightPositionX, lightPositionY, lightPositionZ, 1.0); // Position the light source
+  let specularExponent = 50.0;
+
+
+  gl.useProgram(shader.getProgram());
+  gl.uniform4fv(gl.getUniformLocation(shader.getProgram(), "ambientColor"), flatten(ambientColor));
+  gl.uniform4fv(gl.getUniformLocation(shader.getProgram(), "diffuseColor"), flatten(diffuseColor));
+  gl.uniform3fv(gl.getUniformLocation(shader.getProgram(), "specularColor"), flatten(specularColor));
+  gl.uniform4fv(gl.getUniformLocation(shader.getProgram(), "lightPosition"), flatten(lightPosition));
+  gl.uniform1f(gl.getUniformLocation(shader.getProgram(), "specularExponent"), specularExponent);
+  
+  gl.enable(gl.DEPTH_TEST);
   camera = new Camera(gl, shader.getProgram());
 
   createScene();
@@ -27,11 +55,22 @@ function init() {
 }
 
 function render() {
+  gl.clearColor(1.0, 0.6, 0.2, 1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  shader.activateShader();
-  camera.activate();
+  // Update robot position
+  robotPosition += robotDirection * robotSpeed;
+  if (robotPosition > 0.5 || robotPosition < -0.5) {
+    robotDirection *= -1; // Reverse direction
+  }
 
+  
+
+  // Apply updated position to robot transform
+  let robotTransform = mat4(1, 0, 0, robotPosition, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+  robotNode.setTransform(robotTransform);
+
+  camera.activate();
   sceneGraph.draw();
 
   requestAnimationFrame(render);
@@ -44,7 +83,6 @@ function createScene() {
   let blackMaterial = new MonochromeMaterial(gl, vec4(0, 0, 0, 1), shader);
   let wallMaterial = new MonochromeMaterial(gl, vec4(0.5, 0.5, 0.5, 1), shader); // Material for walls
 
-  
   // Create chessboard floor
   let floorSize = 8;
   let cubeSize = 0.2;
@@ -77,7 +115,6 @@ function createScene() {
     { x: 0.3, z: -0.2, scaleX: 1, scaleZ: 5.8},
     { x: 0, z: 0.6, scaleX: 1, scaleZ: 2.8},
     { x: 0, z: -0.6, scaleX: 1, scaleZ: 2.8},
-
   ];
 
   mazeWalls.forEach(pos => {
@@ -92,7 +129,7 @@ function createScene() {
   });
 
   // Create robot
-  let robotNode = new GraphicsNode(gl, null, null, mat4(1)); // Root node for the robot
+  robotNode = new GraphicsNode(gl, null, null, mat4(1)); // Root node for the robot
 
   let bodyMaterial = new MonochromeMaterial(gl, vec4(0.8, 0.2, 0.2, 1), shader);
   let limbMaterial = new MonochromeMaterial(gl, vec4(0.2, 0.2, 0.8, 1), shader);
@@ -106,8 +143,6 @@ function createScene() {
   let footMesh = new Cone(0.1, 0.1, gl, shader.getProgram());
   let headMesh = new Cuboid(0.3, 0.3, 0.3, gl, shader.getProgram());
   let hatMesh = new Star(5, 0.3, 0.2, 0.1, gl, shader.getProgram());
-
-
 
   // Body
   let bodyTransform = mat4(0.5, 0, 0, 0, 0, 0.5, 0, -1.52, 0, 0, 0.5, 0, 0, 0, 0, 1);
@@ -164,8 +199,10 @@ function createScene() {
   let rightFootNode = new GraphicsNode(gl, footMesh, footMaterial, rightFootTransform);
   rightLegNode.addChild(rightFootNode);
 
+
   rootNode.addChild(robotNode); // Attach robot node to the root node
 
+ 
   // Set the root node's transform to place it in the scene
   rootNode.setTransform(mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1));
 

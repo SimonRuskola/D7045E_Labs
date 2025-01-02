@@ -1,26 +1,70 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Lab 3</title>
+    <title>Lab 4</title>
     <meta charset="UTF-8">
 
     <script type="x-shader/x-vertex" id="vertex-shader">
-        attribute vec4 vPosition;
-        uniform mat4 tMatrix;
-        uniform mat4 pMatrix;
-        uniform mat4 vMatrix;
+        attribute vec4 vPosition;  // Vertex position
+        attribute vec3 a_normal;
+        uniform mat4 tMatrix;   // Transformation Matrix
+        uniform mat4 pMatrix;   // Projection Matrix
+        uniform mat4 vMatrix;   // View Matrix
+        uniform mat3 normalMatrix;
+        varying vec3 v_normal;
+        varying vec4 v_eyeCoords;
 
         void main() {
-            gl_Position = pMatrix * vMatrix * tMatrix * vPosition;
+            v_eyeCoords = vMatrix * tMatrix * vPosition;
+            gl_Position = pMatrix * v_eyeCoords;
+            v_normal = normalize(normalMatrix * a_normal);
         }
     </script>
 
     <script type="x-shader/x-fragment" id="fragment-shader">
         precision mediump float;
-        uniform vec4 fColor;
-
+        varying vec3 v_normal;
+        varying vec4 v_eyeCoords;
+        uniform vec4 lightPosition;
+        uniform vec4 ambientColor;
+        uniform vec4 diffuseColor;
+        uniform vec3 specularColor;
+        uniform float specularExponent;
+        uniform vec4 uColor; 
+    
         void main() {
-            gl_FragColor = fColor;
+
+
+            // Debugging v_normal
+            //gl_FragColor = vec4((v_normal + 1.0) * 0.5, 1.0); // Normalized to [0, 1] range
+            // return;
+    
+            // Debugging v_eyeCoords
+            // gl_FragColor = vec4((v_eyeCoords.xyz + 1.0) * 0.5, 1.0); // Normalized to [0, 1] range
+            // return;
+            
+             //gl_FragColor = vec4((lightPosition.xyz + 1.0) * 0.5, 1.0); // Normalized to [0, 1] range
+             //return;
+
+
+            vec3 N, L, R, V;  // Vectors for lighting equation.
+            N = normalize(v_normal);
+            if (lightPosition.w == 0.0) { // Directional light.
+                L = normalize(lightPosition.xyz);
+            } else { // Point light.
+                L = normalize(lightPosition.xyz / lightPosition.w - v_eyeCoords.xyz);
+            }
+            R = -reflect(L, N);
+            V = normalize(-v_eyeCoords.xyz);  // (Assumes a perspective projection.)
+    
+            vec3 ambient = ambientColor.rgb * ambientColor.a;
+            vec3 diffuse = max(dot(L, N), 0.0) * diffuseColor.rgb * diffuseColor.a;
+            vec3 specular = vec3(0.0);
+            if (dot(L, N) > 0.0) {
+                specular = pow(max(dot(R, V), 0.0), specularExponent) * specularColor;
+            }
+            vec4 v_color = vec4(ambient + diffuse + specular, diffuseColor.a) * uColor;  
+            gl_FragColor = v_color;
         }
     </script>
 
