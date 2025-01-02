@@ -8,7 +8,6 @@ class MonochromeMaterial extends Material {
     super(shader.program);
     this.gl = gl;
     this.color = color;
-    this.fColorLocation = null;
     this.shader = shader;
   }
 
@@ -16,16 +15,15 @@ class MonochromeMaterial extends Material {
     var tMatrix = this.gl.getUniformLocation(this.shader.program, "tMatrix");
     this.gl.uniformMatrix4fv(tMatrix, false, flatten(transform));
 
-    this.fColorLocation = this.gl.getUniformLocation(this.shader.program, "fColor");
-    var distance = transform[2][3] / 20;
+    var normalMatrix = mat3();
+    normalMatrix = inverse(transpose(mat3(transform)));
+    var normalMatrixLocation = this.gl.getUniformLocation(this.shader.program, "normalMatrix");
+    this.gl.uniformMatrix3fv(normalMatrixLocation, false, flatten(normalMatrix));
 
-    var shadedColor = [];
-    if (distance != 1) {
-      shadedColor[0] = this.color[0] * (1 / (1 - distance));
-      shadedColor[1] = this.color[1] * (1 / (1 - distance));
-      shadedColor[2] = this.color[2] * (1 / (1 - distance));
-      shadedColor[3] = 1;
-    }
-    this.gl.uniform4fv(this.fColorLocation, flatten(shadedColor));
+
+    var colorLocation = this.gl.getUniformLocation(this.shader.program, "uColor");
+    this.gl.uniform4fv(colorLocation, flatten(this.color));
+
+    
   }
 }
