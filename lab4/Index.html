@@ -34,18 +34,14 @@
     
         void main() {
 
-
-            // Debugging v_normal
             //gl_FragColor = vec4((v_normal + 1.0) * 0.5, 1.0); // Normalized to [0, 1] range
             // return;
     
-            // Debugging v_eyeCoords
             // gl_FragColor = vec4((v_eyeCoords.xyz + 1.0) * 0.5, 1.0); // Normalized to [0, 1] range
             // return;
             
-             //gl_FragColor = vec4((lightPosition.xyz + 1.0) * 0.5, 1.0); // Normalized to [0, 1] range
-             //return;
-
+            //gl_FragColor = vec4((lightPosition.xyz + 1.0) * 0.5, 1.0); // Normalized to [0, 1] range
+            //return;
 
             vec3 N, L, R, V;  // Vectors for lighting equation.
             N = normalize(v_normal);

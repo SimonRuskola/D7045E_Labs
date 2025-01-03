@@ -8,7 +8,7 @@ let shader;
 let sceneGraph = new SceneGraph();
 
 let lightPositionX = 0.0;
-let lightPositionY = -1;
+let lightPositionY = 0;
 let lightPositionZ = 0.0;
 
 let robotNode;
@@ -27,19 +27,19 @@ function init() {
   let fragmentShader = new Shader(gl, gl.FRAGMENT_SHADER, "fragment-shader");
   let vertexShader = new Shader(gl, gl.VERTEX_SHADER, "vertex-shader");
   shader = new ShaderProgram(gl, vertexShader.getShader(), fragmentShader.getShader());
-
+  
   // Activate the shader program before setting uniforms
   shader.activateShader();
-
+  
   // Set up lighting uniforms
   let ambientColor = vec4(0.2, 0.2, 0.2, 1.0);
   let diffuseColor = vec4(1.0, 1.0, 1.0, 1.0);
   let specularColor = vec3(1.0, 1.0, 1.0);
   let lightPosition = vec4(lightPositionX, lightPositionY, lightPositionZ, 1.0); // Position the light source
   let specularExponent = 50.0;
+  
+  
 
-
-  gl.useProgram(shader.getProgram());
   gl.uniform4fv(gl.getUniformLocation(shader.getProgram(), "ambientColor"), flatten(ambientColor));
   gl.uniform4fv(gl.getUniformLocation(shader.getProgram(), "diffuseColor"), flatten(diffuseColor));
   gl.uniform3fv(gl.getUniformLocation(shader.getProgram(), "specularColor"), flatten(specularColor));
@@ -69,6 +69,7 @@ function render() {
   // Apply updated position to robot transform
   let robotTransform = mat4(1, 0, 0, robotPosition, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
   robotNode.setTransform(robotTransform);
+
 
   camera.activate();
   sceneGraph.draw();
@@ -198,6 +199,14 @@ function createScene() {
   let rightFootTransform = mat4(1, 0, 0, 0, 0, 1, 0, -0.25, 0, 0, 1, 0, 0, 0, 0, 1);
   let rightFootNode = new GraphicsNode(gl, footMesh, footMaterial, rightFootTransform);
   rightLegNode.addChild(rightFootNode);
+
+  //light
+
+  let lightMaterial = new MonochromeMaterial(gl, vec4(1, 1, 1, 1), shader);
+  let lightMesh = new Sphere(0.1, gl, shader.getProgram());
+  let lightTransform = mat4(1, 0, 0, lightPositionX, 0, 1, 0, lightPositionY, 0, 0, 1, lightPositionZ, 0, 0, 0, 1);
+  let lightNode = new GraphicsNode(gl, lightMesh, lightMaterial, lightTransform);
+  rootNode.addChild(lightNode);
 
 
   rootNode.addChild(robotNode); // Attach robot node to the root node

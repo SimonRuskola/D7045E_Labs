@@ -31,6 +31,13 @@ class Mesh {
         gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(vPosition);
 
+        let aNormal = gl.getAttribLocation(shaderProgram, "a_normal");
+        gl.vertexAttribPointer(aNormal, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aNormal);
+
+
+
+
         // Unbind the Vertex Array Object to prevent accidental modification
         gl.bindVertexArray(null);
     }
