@@ -36,7 +36,22 @@ class Cuboid extends Mesh {
             0, 1, 5
         ];
 
-        super(gl, vertices, indices, shaderProgram);
+        const normals = [
+            vec4(0, 0, 1, 0), vec4(0, 0, 1, 0),
+            vec4(0, 0, 1, 0), vec4(0, 0, 1, 0),
+            vec4(0, 0, -1, 0), vec4(0, 0, -1, 0),
+            vec4(0, 0, -1, 0), vec4(0, 0, -1, 0),
+            vec4(-1, 0, 0, 0), vec4(-1, 0, 0, 0),
+            vec4(-1, 0, 0, 0), vec4(-1, 0, 0, 0),
+            vec4(1, 0, 0, 0), vec4(1, 0, 0, 0),
+            vec4(1, 0, 0, 0), vec4(1, 0, 0, 0),
+            vec4(0, 1, 0, 0), vec4(0, 1, 0, 0),
+            vec4(0, 1, 0, 0), vec4(0, 1, 0, 0),
+            vec4(0, -1, 0, 0), vec4(0, -1, 0, 0),
+            vec4(0, -1, 0, 0), vec4(0, -1, 0, 0)
+        ];
+
+        super(gl, vertices, indices, normals, shaderProgram);
 
         this.width = width;
         this.height = height;

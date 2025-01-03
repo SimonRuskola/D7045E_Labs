@@ -8,7 +8,7 @@ let shader;
 let sceneGraph = new SceneGraph();
 
 let lightPositionX = 0.0;
-let lightPositionY = 0;
+let lightPositionY = -1;
 let lightPositionZ = 0.0;
 
 let robotNode;

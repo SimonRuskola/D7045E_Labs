@@ -6,6 +6,7 @@ class Sphere extends Mesh {
     constructor(radius, gl, shaderProgram) {
         const vertices = [];
         const indices = [];
+        const normals = [];
 
         let latitudeBands = 15;
         let longitudeBands = 15;
@@ -27,6 +28,7 @@ class Sphere extends Mesh {
                 const v = 1 - (latNumber / latitudeBands);
 
                 vertices.push(vec4(radius * x, radius * y, radius * z, 1));
+                normals.push(vec3(x, y, z));
             }
         }
 
@@ -40,7 +42,7 @@ class Sphere extends Mesh {
             }
         }
 
-        super(gl, vertices, indices, shaderProgram);
+        super(gl, vertices, indices, normals, shaderProgram);
 
         this.radius = radius;
         this.latitudeBands = latitudeBands;

@@ -6,6 +6,7 @@ class Torus extends Mesh {
     constructor(innerRadius, outerRadius, gl, shaderProgram) {
         const vertices = [];
         const indices = [];
+        const normals = [];
         let numSegments = 15;
         const ringRadius = (outerRadius - innerRadius) / 2;
         const centerRadius = innerRadius + ringRadius;
@@ -26,6 +27,12 @@ class Torus extends Mesh {
 
                 vertices.push(vec4(x, y, z, 1));
 
+                const nx = cosPhi * cosTheta;
+                const ny = cosPhi * sinTheta;
+                const nz = sinPhi;
+
+                normals.push(vec4(nx, ny, nz, 0));
+
                 const nextI = (i + 1) % numSegments;
                 const nextJ = (j + 1) % numSegments;
 
@@ -40,7 +47,7 @@ class Torus extends Mesh {
             }
         }
 
-        super(gl, vertices, indices, shaderProgram);
+        super(gl, vertices, indices, normals, shaderProgram);
 
         this.innerRadius = innerRadius;
         this.outerRadius = outerRadius;

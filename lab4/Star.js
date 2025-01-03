@@ -12,6 +12,7 @@ class Star extends Mesh {
     constructor(n, outerDist, innerDist, T, gl, shaderProgram) {
         const vertices = [];
         const indices = [];
+        const normals = [];
         const angleStep = Math.PI / n;
 
         // Center vertices
@@ -32,13 +33,33 @@ class Star extends Mesh {
             indices.push(0, i, next);
             // Back triangles
             indices.push(1, next, i);
+
+            // Normals for front triangles
+            const normalFront = calculateNormal(vertices[0], vertices[i], vertices[next]);
+            normals.push(normalFront, normalFront, normalFront);
+
+            // Normals for back triangles
+            const normalBack = calculateNormal(vertices[1], vertices[next], vertices[i]);
+            normals.push(normalBack, normalBack, normalBack);
         }
 
-        super(gl, vertices, indices, shaderProgram);
+        super(gl, vertices, indices, normals, shaderProgram);
 
         this.n = n;
         this.outerDist = outerDist;
         this.innerDist = innerDist;
         this.T = T;
     }
+}
+
+// Helper function to calculate normal vector for a triangle
+function calculateNormal(v1, v2, v3) {
+    const u = subtract(v2, v1);
+    const v = subtract(v3, v1);
+    const normal = vec3(
+        u[1] * v[2] - u[2] * v[1],
+        u[2] * v[0] - u[0] * v[2],
+        u[0] * v[1] - u[1] * v[0]
+    );
+    return normalize(normal);
 }

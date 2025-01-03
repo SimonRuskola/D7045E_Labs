@@ -10,23 +10,29 @@ class Cylinder extends Mesh {
 
         const vertices = [];
         const indices = [];
+        const normals = []; // Array to store normals
 
-        // Top circle vertices
+        // Top circle vertices and normals
         for (let i = 0; i < segments; i++) {
             const angle = i * angleStep;
             vertices.push(vec4(radius * Math.cos(angle), h, radius * Math.sin(angle), 1));
+            normals.push(vec4(0, 1, 0, 0)); // Normal pointing up
         }
 
-        // Bottom circle vertices
+        // Bottom circle vertices and normals
         for (let i = 0; i < segments; i++) {
             const angle = i * angleStep;
             vertices.push(vec4(radius * Math.cos(angle), -h, radius * Math.sin(angle), 1));
+            normals.push(vec4(0, -1, 0, 0)); // Normal pointing down
         }
 
-        // Top center vertex
+        // Top center vertex and normal
         vertices.push(vec4(0, h, 0, 1));
-        // Bottom center vertex
+        normals.push(vec4(0, 1, 0, 0)); // Normal pointing up
+
+        // Bottom center vertex and normal
         vertices.push(vec4(0, -h, 0, 1));
+        normals.push(vec4(0, -1, 0, 0)); // Normal pointing down
 
         // Top circle indices
         for (let i = 0; i < segments; i++) {
@@ -38,6 +44,14 @@ class Cylinder extends Mesh {
             indices.push(i + segments, vertices.length - 1, ((i + 1) % segments) + segments);
         }
 
+        // Side vertices and normals
+        for (let i = 0; i < segments; i++) {
+            const angle = i * angleStep;
+            const normal = vec4(Math.cos(angle), 0, Math.sin(angle), 0);
+            normals.push(normal); // Normal for top vertex of side
+            normals.push(normal); // Normal for bottom vertex of side
+        }
+
         // Side indices
         for (let i = 0; i < segments; i++) {
             const next = (i + 1) % segments;
@@ -45,7 +59,7 @@ class Cylinder extends Mesh {
             indices.push(next, next + segments, i + segments);
         }
 
-        super(gl, vertices, indices, shaderProgram);
+        super(gl, vertices, indices, normals, shaderProgram ); // Pass normals to the Mesh constructor
 
         this.radius = radius;
         this.height = height;
