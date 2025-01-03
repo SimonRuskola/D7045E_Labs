@@ -922,7 +922,7 @@ function inverse(m)
    if(m.length == 4) return inverse4(m);
 }
 
-function normalMatrix(m, flag)
+function normalMatrix2(m, flag)
 {
     var a = mat4();
     a = inverse(transpose(m));
