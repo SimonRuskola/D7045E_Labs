@@ -164,7 +164,7 @@ function createScene() {
     { x: 0.3, z: -0.2, scaleX: 1, scaleZ: 5.8},
     { x: 0, z: 0.4, scaleX: 1, scaleZ: 2.8},
     { x: 0, z: -0.6, scaleX: 1, scaleZ: 2.8},
-    { x: 0, z: 0.65, scaleX: 10, scaleZ: 0.5},
+    { x: 0, z: -0.85, scaleX: 10, scaleZ: 0.5},
   ];
 
   mazeWalls.forEach(pos => {
