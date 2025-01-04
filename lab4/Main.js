@@ -160,10 +160,11 @@ function createScene() {
 
   // Define maze wall positions
   let mazeWalls = [
-    { x: -0.3, z: 0.2, scaleX: 1, scaleZ: 5.8},
+    { x: -0.31, z: 0.1, scaleX: 1, scaleZ: 5.8},
     { x: 0.3, z: -0.2, scaleX: 1, scaleZ: 5.8},
-    { x: 0, z: 0.6, scaleX: 1, scaleZ: 2.8},
+    { x: 0, z: 0.4, scaleX: 1, scaleZ: 2.8},
     { x: 0, z: -0.6, scaleX: 1, scaleZ: 2.8},
+    { x: 0, z: 0.65, scaleX: 10, scaleZ: 0.5},
   ];
 
   mazeWalls.forEach(pos => {
@@ -176,6 +177,37 @@ function createScene() {
     let wall = new GraphicsNode(gl, wallMesh, wallMaterial, transform);
     rootNode.addChild(wall);
   });
+
+  // Create objects in the labyrinth
+  let sphereMaterial = new MonochromeMaterial(gl, vec4(1, 0, 0, 1), shader);
+  let cubeMaterial = new MonochromeMaterial(gl, vec4(0, 1, 0, 1), shader);
+  let cylinderMaterial = new MonochromeMaterial(gl, vec4(0, 0, 1, 1), shader);
+  let coneMaterial = new MonochromeMaterial(gl, vec4(1, 1, 0, 1), shader);
+  let torusMaterial = new MonochromeMaterial(gl, vec4(1, 0, 1, 1), shader);
+
+  let sphereMesh = new Sphere(0.1, gl, shader.getProgram());
+  let cubeMesh = new Cuboid(0.2, 0.2, 0.2, gl, shader.getProgram());
+  let cylinderMesh = new Cylinder(0.1, 0.2, gl, shader.getProgram());
+  let coneMesh = new Cone(0.1, 0.2, gl, shader.getProgram());
+  let torusMesh = new Torus(0.1, 0.05, gl, shader.getProgram());
+
+  let sphereTransform = mat4(1, 0, 0, -0.5, 0, 1, 0, -1.8, 0, 0, 1, 0.2, 0, 0, 0, 1);
+  let cubeTransform = mat4(1, 0, 0, 0.46, 0, 1, 0, -1.8, 0, 0, 1, -0.2, 0, 0, 0, 1);
+  let cylinderTransform = mat4(1, 0, 0, -0.15, 0, 1, 0, -1.8, 0, 0, 1, -0.4, 0, 0, 0, 1);
+  let coneTransform = mat4(1, 0, 0, 0.15, 0, 1, 0, -1.9, 0, 0, 1, 0.2, 0, 0, 0, 1);
+  let torusTransform = mat4(1, 0, 0, 0.46, 0, 1, 0, -1.6, 0, 0, 1, -0.2, 0, 0, 0, 1);
+
+  let sphereNode = new GraphicsNode(gl, sphereMesh, sphereMaterial, sphereTransform);
+  let cubeNode = new GraphicsNode(gl, cubeMesh, cubeMaterial, cubeTransform);
+  let cylinderNode = new GraphicsNode(gl, cylinderMesh, cylinderMaterial, cylinderTransform);
+  let coneNode = new GraphicsNode(gl, coneMesh, coneMaterial, coneTransform);
+  let torusNode = new GraphicsNode(gl, torusMesh, torusMaterial, torusTransform);
+
+  rootNode.addChild(sphereNode);
+  rootNode.addChild(cubeNode);
+  rootNode.addChild(cylinderNode);
+  rootNode.addChild(coneNode);
+  rootNode.addChild(torusNode);
 
   // Create robot
   robotNode = new GraphicsNode(gl, null, null, mat4(1)); // Root node for the robot
