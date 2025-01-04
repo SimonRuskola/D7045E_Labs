@@ -61,64 +61,170 @@ class Camera {
     this.gl.uniformMatrix4fv(vMatrixLocation, false, flatten(this.vMatrix));
   }
 
-  updateTilt(direction, deltaTime) {
-    const tiltAngle = this.acceleration* 10 * deltaTime;
+  tiltUp(deltaTime) {
+    const tiltAngle = this.angularVelocity[0] * deltaTime;
     const cosAngle = Math.cos(tiltAngle);
     const sinAngle = Math.sin(tiltAngle);
+    const direction = normalize(vec3(
+      this.at[0] - this.eye[0],
+      this.at[1] - this.eye[1],
+      this.at[2] - this.eye[2]
+    ));
+    const right = cross(direction, this.up);
+    const newDirection = vec3(
+      direction[0] * cosAngle + this.up[0] * sinAngle,
+      direction[1] * cosAngle + this.up[1] * sinAngle,
+      direction[2] * cosAngle + this.up[2] * sinAngle
+    );
+    this.at = vec3(
+      this.eye[0] + newDirection[0],
+      this.eye[1] + newDirection[1],
+      this.eye[2] + newDirection[2]
+    );
+  }
 
-    if (this.keys['ArrowUp']) {
-      const right = cross(direction, this.up);
-      const newDirection = vec3(
-        direction[0] * cosAngle + this.up[0] * sinAngle,
-        direction[1] * cosAngle + this.up[1] * sinAngle,
-        direction[2] * cosAngle + this.up[2] * sinAngle
-      );
-      this.at = vec3(
-        this.eye[0] + newDirection[0],
-        this.eye[1] + newDirection[1],
-        this.eye[2] + newDirection[2]
-      );
-    }
+  tiltDown(deltaTime) {
+    const tiltAngle = this.angularVelocity[0] * deltaTime;
+    const cosAngle = Math.cos(tiltAngle);
+    const sinAngle = Math.sin(tiltAngle);
+    const direction = normalize(vec3(
+      this.at[0] - this.eye[0],
+      this.at[1] - this.eye[1],
+      this.at[2] - this.eye[2]
+    ));
+    const right = cross(direction, this.up);
+    const newDirection = vec3(
+      direction[0] * cosAngle + this.up[0] * sinAngle,
+      direction[1] * cosAngle + this.up[1] * sinAngle,
+      direction[2] * cosAngle + this.up[2] * sinAngle
+    );
+    this.at = vec3(
+      this.eye[0] + newDirection[0],
+      this.eye[1] + newDirection[1],
+      this.eye[2] + newDirection[2]
+    );
+  }
 
-    if (this.keys['ArrowDown']) {
-      const right = cross(direction, this.up);
-      const newDirection = vec3(
-        direction[0] * cosAngle - this.up[0] * sinAngle,
-        direction[1] * cosAngle - this.up[1] * sinAngle,
-        direction[2] * cosAngle - this.up[2] * sinAngle
-      );
-      this.at = vec3(
-        this.eye[0] + newDirection[0],
-        this.eye[1] + newDirection[1],
-        this.eye[2] + newDirection[2]
-      );
-    }
+  tiltLeft(deltaTime) {
+    const tiltAngle = this.angularVelocity[1] * deltaTime;
+    const cosAngle = Math.cos(tiltAngle);
+    const sinAngle = Math.sin(tiltAngle);
+    const direction = normalize(vec3(
+      this.at[0] - this.eye[0],
+      this.at[1] - this.eye[1],
+      this.at[2] - this.eye[2]
+    ));
+    const newDirection = vec3(
+      direction[0] * cosAngle - direction[2] * sinAngle,
+      direction[1],
+      direction[0] * sinAngle + direction[2] * cosAngle
+    );
+    this.at = vec3(
+      this.eye[0] + newDirection[0],
+      this.eye[1] + newDirection[1],
+      this.eye[2] + newDirection[2]
+    );
+  }
 
-    if (this.keys['ArrowRight']) {
-      const newDirection = vec3(
-        direction[0] * cosAngle - direction[2] * sinAngle,
-        direction[1],
-        direction[0] * sinAngle + direction[2] * cosAngle
-      );
-      this.at = vec3(
-        this.eye[0] + newDirection[0],
-        this.eye[1] + newDirection[1],
-        this.eye[2] + newDirection[2]
-      );
-    }
+  tiltRight(deltaTime) {
+    const tiltAngle = this.angularVelocity[1] * deltaTime;
+    const cosAngle = Math.cos(tiltAngle);
+    const sinAngle = Math.sin(tiltAngle);
+    const direction = normalize(vec3(
+      this.at[0] - this.eye[0],
+      this.at[1] - this.eye[1],
+      this.at[2] - this.eye[2]
+    ));
+    const newDirection = vec3(
+      direction[0] * cosAngle - direction[2] * sinAngle,
+      direction[1],
+      direction[0] * sinAngle + direction[2] * cosAngle
+    );
+    this.at = vec3(
+      this.eye[0] + newDirection[0],
+      this.eye[1] + newDirection[1],
+      this.eye[2] + newDirection[2]
+    );
+  }
 
-    if (this.keys['ArrowLeft']) {
-      const newDirection = vec3(
-        direction[0] * cosAngle + direction[2] * sinAngle,
-        direction[1],
-        -direction[0] * sinAngle + direction[2] * cosAngle
-      );
-      this.at = vec3(
-        this.eye[0] + newDirection[0],
-        this.eye[1] + newDirection[1],
-        this.eye[2] + newDirection[2]
-      );
-    }
+  moveForward(deltaTime) {
+    const direction = normalize(vec3(
+      this.at[0] - this.eye[0],
+      this.at[1] - this.eye[1],
+      this.at[2] - this.eye[2]
+    ));
+    this.velocity[0] += direction[0] * this.acceleration;
+    this.velocity[1] += direction[1] * this.acceleration;
+    this.velocity[2] += direction[2] * this.acceleration;
+  }
+
+  moveBackward(deltaTime) {
+    const direction = normalize(vec3(
+      this.at[0] - this.eye[0],
+      this.at[1] - this.eye[1],
+      this.at[2] - this.eye[2]
+    ));
+    this.velocity[0] -= direction[0] * this.acceleration;
+    this.velocity[1] -= direction[1] * this.acceleration;
+    this.velocity[2] -= direction[2] * this.acceleration;
+  }
+
+  moveLeft(deltaTime) {
+    const direction = normalize(vec3(
+      this.at[0] - this.eye[0],
+      this.at[1] - this.eye[1],
+      this.at[2] - this.eye[2]
+    ));
+    const right = cross(direction, this.up);
+    this.velocity[0] -= right[0] * this.acceleration;
+    this.velocity[1] -= right[1] * this.acceleration;
+    this.velocity[2] -= right[2] * this.acceleration;
+  }
+
+  moveRight(deltaTime) {
+    const direction = normalize(vec3(
+      this.at[0] - this.eye[0],
+      this.at[1] - this.eye[1],
+      this.at[2] - this.eye[2]
+    ));
+    const right = cross(direction, this.up);
+    this.velocity[0] += right[0] * this.acceleration;
+    this.velocity[1] += right[1] * this.acceleration;
+    this.velocity[2] += right[2] * this.acceleration;
+  }
+
+  moveUp(deltaTime) {
+    this.velocity[1] += this.acceleration;
+  }
+
+  moveDown(deltaTime) {
+    this.velocity[1] -= this.acceleration;
+  }
+
+  updateTilt(direction, deltaTime) {
+    if (this.keys['ArrowUp']) this.angularVelocity[0] += this.acceleration;
+    if (this.keys['ArrowDown']) this.angularVelocity[0] -= this.acceleration;
+    if (this.keys['ArrowLeft']) this.angularVelocity[1] -= this.acceleration;
+    if (this.keys['ArrowRight']) this.angularVelocity[1] += this.acceleration;
+
+    this.angularVelocity = vec2(
+      this.angularVelocity[0] * this.friction,
+      this.angularVelocity[1] * this.friction
+    );
+
+    if (this.keys['ArrowUp']) this.tiltUp(deltaTime);
+    if (this.keys['ArrowDown']) this.tiltDown(deltaTime);
+    if (this.keys['ArrowLeft']) this.tiltLeft(deltaTime);
+    if (this.keys['ArrowRight']) this.tiltRight(deltaTime);
+  }
+
+  updateMovement(deltaTime) {
+    if (this.keys['w']) this.moveForward(deltaTime);
+    if (this.keys['s']) this.moveBackward(deltaTime);
+    if (this.keys['a']) this.moveLeft(deltaTime);
+    if (this.keys['d']) this.moveRight(deltaTime);
+    if (this.keys['q']) this.moveUp(deltaTime);
+    if (this.keys['e']) this.moveDown(deltaTime);
   }
 
   update(deltaTime) {
@@ -188,6 +294,9 @@ class Camera {
 
     // Update tilt
     this.updateTilt(direction, deltaTime);
+
+    // Update movement
+    this.updateMovement(deltaTime);
 
     // Update view matrix
     this.vMatrix = lookAt(this.eye, this.at, this.up);
