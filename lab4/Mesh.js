@@ -44,7 +44,7 @@ class Mesh {
         
         let aNormal = gl.getAttribLocation(shaderProgram, "a_normal");
         gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
-        gl.vertexAttribPointer(aNormal, 4, gl.FLOAT, false, 0, 0); 
+        gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0, 0); 
         gl.enableVertexAttribArray(aNormal);
 
         // Unbind the Vertex Array Object to prevent accidental modification
