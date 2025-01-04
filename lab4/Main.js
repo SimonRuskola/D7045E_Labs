@@ -14,7 +14,17 @@ let lightPositionZ = 0.0;
 let robotNode;
 let robotPosition = 0;
 let robotDirection = 0.2;
-let robotSpeed = 0.01;
+let robotSpeed = 0.003;
+
+let leftArmNode;
+let rightArmNode;
+let leftArmRotation = 0;
+let rightArmRotation = 0;
+let armRotationSpeed = 0.02;
+
+let starNode;
+let starScale = 1.0;
+let starScaleDirection = 0.01;
 
 function init() {
   canvas = document.getElementById("gl-canvas");
@@ -54,22 +64,60 @@ function init() {
   render();
 }
 
-function render() {
-  gl.clearColor(1.0, 0.6, 0.2, 1.0);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
+function updateMovements() {
   // Update robot position
   robotPosition += robotDirection * robotSpeed;
-  if (robotPosition > 0.5 || robotPosition < -0.5) {
+  if (robotPosition > 0.09 || robotPosition < -0.09) {
     robotDirection *= -1; // Reverse direction
   }
 
-  
+  // Update arm rotations
+  leftArmRotation += armRotationSpeed;
+  rightArmRotation -= armRotationSpeed;
 
   // Apply updated position to robot transform
   let robotTransform = mat4(1, 0, 0, robotPosition, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
   robotNode.setTransform(robotTransform);
 
+  // Apply vertical rotation to left arm
+  let leftArmTransform = mat4(
+    1, 0, 0, -0.25,
+    0, Math.cos(leftArmRotation), -Math.sin(leftArmRotation), 0.1,
+    0, Math.sin(leftArmRotation), Math.cos(leftArmRotation), 0,
+    0, 0, 0, 1
+  );
+  leftArmNode.setTransform(leftArmTransform);
+
+  // Apply vertical rotation to right arm
+  let rightArmTransform = mat4(
+    1, 0, 0, 0.25,
+    0, Math.cos(rightArmRotation), -Math.sin(rightArmRotation), 0.1,
+    0, Math.sin(rightArmRotation), Math.cos(rightArmRotation), 0,
+    0, 0, 0, 1
+  );
+  rightArmNode.setTransform(rightArmTransform);
+
+  // Update star scale
+  starScale += starScaleDirection * 0.1;
+  if (starScale > 1.5 || starScale < 0.4) {
+    starScaleDirection *= -1; // Reverse scaling direction
+  }
+
+  // Apply scaling to star
+  let starTransform = mat4(
+    starScale, 0, 0, 0,
+    0, starScale, 0, 0.4,
+    0, 0, starScale, 0,
+    0, 0, 0, 1
+  );
+  starNode.setTransform(starTransform);
+}
+
+function render() {
+  gl.clearColor(1.0, 0.6, 0.2, 1.0);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  updateMovements();
 
   camera.activate();
   sceneGraph.draw();
@@ -157,17 +205,17 @@ function createScene() {
 
   // Hat
   let hatTransform = mat4(1, 0, 0, 0, 0, 1, 0, 0.4, 0, 0, 1, 0, 0, 0, 0, 1);
-  let hatNode = new GraphicsNode(gl, hatMesh, starMaterial, hatTransform);
-  headNode.addChild(hatNode);
+  starNode = new GraphicsNode(gl, hatMesh, starMaterial, hatTransform);
+  headNode.addChild(starNode);
 
   // Left Arm
   let leftArmTransform = mat4(1, 0, 0, -0.25, 0, 1, 0, 0.1, 0, 0, 1, 0, 0, 0, 0, 1);
-  let leftArmNode = new GraphicsNode(gl, limbMesh, limbMaterial, leftArmTransform);
+  leftArmNode = new GraphicsNode(gl, limbMesh, limbMaterial, leftArmTransform);
   bodyNode.addChild(leftArmNode);
 
   // Right Arm
   let rightArmTransform = mat4(1, 0, 0, 0.25, 0, 1, 0, 0.1, 0, 0, 1, 0, 0, 0, 0, 1);
-  let rightArmNode = new GraphicsNode(gl, limbMesh, limbMaterial, rightArmTransform);
+  rightArmNode = new GraphicsNode(gl, limbMesh, limbMaterial, rightArmTransform);
   bodyNode.addChild(rightArmNode);
 
   // Left Hand
