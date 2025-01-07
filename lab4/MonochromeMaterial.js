@@ -15,13 +15,11 @@ class MonochromeMaterial extends Material {
     var tMatrix = this.gl.getUniformLocation(this.shader.program, "tMatrix");
     this.gl.uniformMatrix4fv(tMatrix, false, flatten(transform));
 
-    var normalMatrix = mat3();
-    //normalMatrix = inverse(transpose(mat3(transform)));
-    
+    /* var normalMatrix = mat3();
     normalMatrix = normalMatrix2(transform, true);
     
     var normalMatrixLocation = this.gl.getUniformLocation(this.shader.program, "normalMatrix");
-    this.gl.uniformMatrix3fv(normalMatrixLocation, false, flatten(normalMatrix)); 
+    this.gl.uniformMatrix3fv(normalMatrixLocation, false, flatten(normalMatrix));  */
 
 
     var colorLocation = this.gl.getUniformLocation(this.shader.program, "uColor");

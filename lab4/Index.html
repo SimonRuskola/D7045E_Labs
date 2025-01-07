@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
 
     <script type="x-shader/x-vertex" id="vertex-shader">
-        attribute vec4 vPosition;  // Vertex position
+        attribute vec4 a_coords;  // Vertex position
         attribute vec3 a_normal;
         uniform mat4 tMatrix;   // Transformation Matrix
         uniform mat4 pMatrix;   // Projection Matrix
@@ -15,7 +15,7 @@
         varying vec4 v_eyeCoords;
 
         void main() {
-            v_eyeCoords = vMatrix * tMatrix * vPosition;
+            v_eyeCoords = vMatrix * tMatrix * a_coords;
             gl_Position = pMatrix * v_eyeCoords;
             v_normal = normalize(normalMatrix * a_normal);
         }

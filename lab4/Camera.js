@@ -1,7 +1,5 @@
 /* 
   Class Camera for a simple camera (or “eye”). 
-  An instance of this camera is stationary in the world, meaning that once it has been
-  created and given a location and orientation it cannot be moved.
   The camera defines a view matrix and a perspective matrix, in terms of its parameters.
   The view/projection is then to be used on all graphics nodes when they are rendered.
 */
@@ -31,6 +29,15 @@ class Camera {
     // View and projection matrices
     this.vMatrix = lookAt(this.eye, this.at, this.up);
     this.pMatrix = perspective(this.fieldOfView, this.aspect, this.near, this.far);
+    /* this.nMatrix = [
+        vec3(this.vMatrix[0][0], this.vMatrix[0][1], this.vMatrix[0][2]),
+        vec3(this.vMatrix[1][0], this.vMatrix[1][1], this.vMatrix[1][2]),
+        vec3(this.vMatrix[2][0], this.vMatrix[2][1], this.vMatrix[2][2])
+    ]; */
+
+    this.nMatrix = normalMatrix2(this.vMatrix, true);
+
+    
 
      // Movement parameters
      this.maxVelocity = 0.1;
@@ -55,10 +62,12 @@ class Camera {
     // Get uniform locations
     const pMatrixLocation = this.gl.getUniformLocation(this.shaderProgram, "pMatrix");
     const vMatrixLocation = this.gl.getUniformLocation(this.shaderProgram, "vMatrix");
+    const nMatrixLocation = this.gl.getUniformLocation(this.shaderProgram, "normalMatrix");
 
     // Set uniform values
     this.gl.uniformMatrix4fv(pMatrixLocation, false, flatten(this.pMatrix));
     this.gl.uniformMatrix4fv(vMatrixLocation, false, flatten(this.vMatrix));
+    this.gl.uniformMatrix3fv(nMatrixLocation, false, flatten(this.nMatrix));
   }
 
   tiltUp(deltaTime) {
