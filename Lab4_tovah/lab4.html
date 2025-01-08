@@ -1,0 +1,83 @@
+<!--- Tovah Parnes - tovpar-9@student.ltu.se  -->
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+		<title>Lab4 - The World is a Scene</title>
+
+		<script id="vertex-shader" type="x-shader/x-vertex">
+			attribute vec4 a_vertexPosition;
+			attribute vec3 a_vertexNormal;
+			uniform mat4 u_transformMatrix;
+			uniform mat3 u_normalMatrix;
+			uniform mat4 u_viewMatrix;
+			uniform mat4 u_projectionMatrix;
+			varying vec3 v_normal;
+			varying vec4 v_eyeCoords;
+
+			void main()
+			{
+				//v_normal = normalize(mat3(u_transformMatrix)*a_vertexNormal.xyz);
+				v_normal = normalize(u_normalMatrix * a_vertexNormal);
+				v_eyeCoords = u_viewMatrix * u_transformMatrix * a_vertexPosition;
+				gl_Position = u_projectionMatrix * v_eyeCoords;
+			}
+		</script>
+
+		<script id="fragment-shader" type="x-shader/x-fragment">
+			precision mediump float;
+			varying vec3 v_normal;
+			varying vec4 v_eyeCoords;
+			uniform vec4 u_lightPosition;
+			uniform vec4 u_ambientColor;
+			uniform vec4 u_diffuseColor;
+			uniform vec3 u_specularColor;
+			uniform float u_specularExponent;
+			uniform vec4 u_color;
+			void main()
+			{
+				vec3 N, L, R, V;  // Vectors for lighting equation.
+				N = normalize(v_normal);
+				if (u_lightPosition.w == 0.0) { // Directional light.
+					L = normalize(u_lightPosition.xyz);
+				} else { // Point light.
+					L = normalize(u_lightPosition.xyz / u_lightPosition.w - v_eyeCoords.xyz);
+				}
+				R = -reflect(L, N);
+				V = normalize(-v_eyeCoords.xyz);  // (Assumes a perspective projection.)
+
+				vec3 ambient = u_ambientColor.rgb * u_ambientColor.a;
+				vec3 diffuse = max(dot(L, N), 0.0) * u_diffuseColor.rgb * u_diffuseColor.a;
+				vec3 specular = vec3(0.0);
+				if (dot(L, N) > 0.0) {
+					specular = pow(max(dot(R, V), 0.0), u_specularExponent) * u_specularColor;
+				}
+				vec4 v_color = vec4(ambient + diffuse + specular, u_diffuseColor.a) * u_color;
+				gl_FragColor = v_color;
+			}
+		</script>
+	</head>
+
+	<body>
+
+		<noscript
+			><p><b>Sorry, but this page requires JavaScript.</b></p></noscript
+		>
+
+		<center>
+			<canvas id="gl-canvas" width="1700px" height="900px">
+				Oops ... your browser doesn't support the HTML5 canvas element
+			</canvas>
+		</center>
+		<br />
+	</body>
+	<script type="text/javascript" src="angel.js"></script>
+	<script type="text/javascript" src="mesh.js"></script>
+	<script type="text/javascript" src="shader.js"></script>
+	<script type="text/javascript" src="shaderProgram.js"></script>
+	<script type="text/javascript" src="material.js"></script>
+	<script type="text/javascript" src="graphicsNode.js"></script>
+	<script type="text/javascript" src="Camera2.js"></script>
+	<script type="text/javascript" src="lab4.js"></script>
+</html>

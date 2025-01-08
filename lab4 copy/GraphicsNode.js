@@ -21,8 +21,7 @@ class GraphicsNode {
     let combinedTransform = mult(parentTransform, this.transform);
 
     if (this.material != null) {
-      //gl.bindVertexArray(this.mesh.getVertexArray());
-      this.mesh.activateBuffers();
+      gl.bindVertexArray(this.mesh.getVertexArray());
       this.material.applyMaterial(combinedTransform);
       this.gl.drawElements(
         this.gl.TRIANGLES,

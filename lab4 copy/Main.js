@@ -26,6 +26,8 @@ let starNode;
 let starScale = 1.0;
 let starScaleDirection = 0.01;
 
+const normalMatrix = mat3.create();
+
 function init() {
   canvas = document.getElementById("gl-canvas");
   gl = canvas.getContext("webgl2");
@@ -42,10 +44,21 @@ function init() {
   // Activate the shader program before setting uniforms
   shader.activateShader();
   
-  camera = new Camera(gl, shader.getProgram());
+  //camera = new Camera(gl, shader.getProgram());
   initLight();
 
-  createScene();
+  createSimpleScene();
+
+  mat3.normalFromMat4(normalMatrix, modelview);
+    
+  gl.uniformMatrix3fv(u_normalMatrix, false, normalMatrix);
+  gl.uniformMatrix4fv(u_modelview, false, modelview );
+  gl.uniformMatrix4fv(u_projection, false, projection );
+  
+  /* Draw the model.  The data for the model was set up in installModel() */
+  console.log(objects[currentModelNumber].indices);
+  console.log(objects[currentModelNumber].vertexPositions);
+  console.log(objects[currentModelNumber].vertexNormals);
 
 
 
@@ -125,7 +138,7 @@ function render() {
   //updateMovements();
 
   shader.activateShader();
-  camera.activate();
+  //camera.activate();
   sceneGraph.draw();
 
   requestAnimationFrame(render);
@@ -314,14 +327,12 @@ function createSimpleScene(){
 
   let cubeSize = 0.2;
   let cubiodMesh = new Cuboid(cubeSize, cubeSize, cubeSize, gl, shader.getProgram());
-  //let cubiodMesh = new Star(5, 1, 0.5, 0.5, gl, shader.getProgram());
-
 
   let transform = mat4(1, 0, 0, 0, 0, 1, 0, -1.3, 0, 0, 1, 0, 0, 0, 0, 1);
 
   let cube = new GraphicsNode(gl, cubiodMesh, wallMaterial, transform);
 
-  rootNode.addChild(cube); 
+  rootNode.addChild(cube); // Attach chessboard node to the root node
 
   sceneGraph.addNode(rootNode);
 

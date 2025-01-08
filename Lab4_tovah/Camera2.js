@@ -5,9 +5,9 @@
 */
 
 class Camera {
-  constructor(gl, shaderProgram) {
+  constructor(gl, shaderProgram, canvas) {
     this.gl = gl;
-    this.shaderProgram = shaderProgram;
+    this.shaderProgram = shaderProgram.getProgram();
 
     // Camera parameters
     this.radius = 10;
@@ -35,7 +35,7 @@ class Camera {
         vec3(this.vMatrix[2][0], this.vMatrix[2][1], this.vMatrix[2][2])
     ]; */
 
-    this.nMatrix = normalMatrix2(this.vMatrix, true);
+    this.nMatrix = normalMatrix(this.vMatrix, true);
 
     
 
@@ -59,15 +59,22 @@ class Camera {
   }
 
   activate() {
+
+
+
+	/* 	let projectionMatrix = this.gl.getUniformLocation(this.shaderProgram,"u_projectionMatrix");
+		let viewMatrix = this.gl.getUniformLocation(this.shaderProgram, "u_viewMatrix");
+
+		this.gl.uniformMatrix4fv(projectionMatrix, false, flatten(this.projectionMatrix));
+		this.gl.uniformMatrix4fv(viewMatrix, false, flatten(this.viewMatrix)); */
+
     // Get uniform locations
-    const pMatrixLocation = this.gl.getUniformLocation(this.shaderProgram, "pMatrix");
-    const vMatrixLocation = this.gl.getUniformLocation(this.shaderProgram, "vMatrix");
-    const nMatrixLocation = this.gl.getUniformLocation(this.shaderProgram, "normalMatrix");
+    const projectionMatrix = this.gl.getUniformLocation(this.shaderProgram,"u_projectionMatrix");
+    const viewMatrix = this.gl.getUniformLocation(this.shaderProgram, "u_viewMatrix");
 
     // Set uniform values
-    this.gl.uniformMatrix4fv(pMatrixLocation, false, flatten(this.pMatrix));
-    this.gl.uniformMatrix4fv(vMatrixLocation, false, flatten(this.vMatrix));
-    this.gl.uniformMatrix3fv(nMatrixLocation, false, flatten(this.nMatrix));
+    this.gl.uniformMatrix4fv(projectionMatrix, false, flatten(this.pMatrix));
+    this.gl.uniformMatrix4fv(viewMatrix, false, flatten(this.vMatrix));
   }
 
   tiltUp(deltaTime) {
@@ -317,7 +324,7 @@ class Camera {
     this.lastTime = currentTime;
 
     this.update(deltaTime);
-    this.activate();
+    //this.activate();
 
     requestAnimationFrame(() => this.animate());
   }

@@ -1,31 +1,30 @@
 /**
- * An object of type TrackballRotator can be used to implement a trackball-like mouse rotation
- * of a WebGL scene about the origin.  Only the first parameter to the constructor is required.
- * When an object is created, mouse event handlers are set up on the canvas to respond to rotation.
- * It will also work with a touchscreen.
+ * An object of type Camera can be used to implement camera movement and tilting
+ * using keyboard inputs in a WebGL scene. Only the first parameter to the constructor is required.
+ * When an object is created, keyboard event handlers are set up to respond to movement and tilting.
  * 
- * The class defines the following methods for an object rotator of type SimpleRotator:
+ * The class defines the following methods for an object camera of type Camera:
  *
- *    rotator.getViewMatrix() returns the view transformation matrix as a regular JavaScript
- *         array of 16 elements, in column-major orde, suitable for use with gl.uniformMatrix4fv
+ *    camera.getViewMatrix() returns the view transformation matrix as a regular JavaScript
+ *         array of 16 elements, in column-major order, suitable for use with gl.uniformMatrix4fv
  *         or for further transformation with the glMatrix library mat4 class.
- *    rotator.setView(viewDistance, viewpointDirection, viewUp) set up the view, where the
+ *    camera.setView(viewDistance, viewpointDirection, viewUp) set up the view, where the
  *         parameters are optional and are used in the same way as the corresponding parameters
  *         in the constructor.
- *    rotator.setViewDistance(viewDistance) sets the distance of the viewer from the origin without
+ *    camera.setViewDistance(viewDistance) sets the distance of the viewer from the origin without
  *         changing the direction of view. The parameter must be a positive number.
- *    rotator.getViewDistance() returns the current value.
- *    rotator.setRotationCenter( vector ) -- Sets the center of rotation.
+ *    camera.getViewDistance() returns the current value.
+ *    camera.setRotationCenter( vector ) -- Sets the center of rotation.
  *       The parameter must be an array of (at least) three numbers.  The
  *       view is rotated about this point.  Usually, you want the rotation
  *       center to be the point that appears at the middle of the canvas,
  *       but that is not a requirement.  The initial value is effectively
  *       equal to [0,0,0].
- *    rotator.getRotationCenter() -- returns the current value.
+ *    camera.getRotationCenter() -- returns the current value.
  *
- * @param canvas the HTML canvas element used for WebGL drawing.  The user will rotate the
- *    scene by dragging the mouse on this canvas.  This parameter is required.
- * @param callback if present must be a function, which is called whenever the rotation changes.
+ * @param canvas the HTML canvas element used for WebGL drawing.  The user will move and tilt the
+ *    scene using keyboard inputs.  This parameter is required.
+ * @param callback if present must be a function, which is called whenever the view changes.
  *    It is typically the function that draws the scene
  * @param viewDistance if present must be a positive number.  Gives the distance of the viewer
  *    from the origin.  If not present, the length is zero, which can be OK for orthographic projection,
@@ -33,13 +32,13 @@
  * @param viewpointDirection if present must be an array of three numbers, not all zero.  The
  *    view is from the direction of this vector towards the origin (0,0,0).  If not present,
  *    the value [0,0,10] is used.  This is just the initial value for viewpointDirection; it will
- *    be modified by rotation.
+ *    be modified by movement and tilting.
  * @param viewUp if present must be an array of three numbers. Gives a vector that will
  *    be seen as pointing upwards in the view.  If not present, the value is [0,1,0].
  *    Cannot be a multiple of viewpointDirection.  This is just the initial value for
- *    viewUp; it will be modified by rotation.
+ *    viewUp; it will be modified by movement and tilting.
  */
-function TrackballRotator(canvas, callback, viewDistance, viewpointDirection, viewUp) {
+function Camera(canvas, callback, viewDistance, viewpointDirection, viewUp) {
     var unitx = new Array(3);
     var unity = new Array(3);
     var unitz = new Array(3);
@@ -87,8 +86,7 @@ function TrackballRotator(canvas, callback, viewDistance, viewpointDirection, vi
         center = rotationCenter;
     };
     this.setView(viewDistance, viewpointDirection, viewUp);
-    canvas.addEventListener("mousedown", doMouseDown, false);
-    canvas.addEventListener("touchstart", doTouchStart, false);
+    document.addEventListener("keydown", doKeyDown, false);
     function applyTransvection(e1, e2) {  // rotate vector e1 onto e2
         function reflectInAxis(axis, source, destination) {
             var s = 2 * (axis[0] * source[0] + axis[1] * source[1] + axis[2] * source[2]);
@@ -111,105 +109,50 @@ function TrackballRotator(canvas, callback, viewDistance, viewpointDirection, vi
     }
     var centerX, centerY, radius2;
     var prevx,prevy;
-    var dragging = false;
-    function doMouseDown(evt) {
-        if (dragging)
-           return;
-        dragging = true;
-        centerX = canvas.width/2;
-        centerY = canvas.height/2;
-        var radius = Math.min(centerX,centerY);
-        radius2 = radius*radius;
-        document.addEventListener("mousemove", doMouseDrag, false);
-        document.addEventListener("mouseup", doMouseUp, false);
-        var box = canvas.getBoundingClientRect();
-        prevx = evt.clientX - box.left;
-        prevy = evt.clientY - box.top;
-    }
-    function doMouseDrag(evt) {
-        if (!dragging)
-           return;
-        var box = canvas.getBoundingClientRect();
-        var x = evt.clientX - box.left;
-        var y = evt.clientY - box.top;
-        var ray1 = toRay(prevx,prevy);
-        var ray2 = toRay(x,y);
-        applyTransvection(ray1,ray2);
-        prevx = x;
-        prevy = y;
+    var moving = false;
+    function doKeyDown(evt) {
+        var key = evt.key;
+        switch(key) {
+            case "ArrowUp":
+                moveForward();
+                break;
+            case "ArrowDown":
+                moveBackward();
+                break;
+            case "ArrowLeft":
+                tiltLeft();
+                break;
+            case "ArrowRight":
+                tiltRight();
+                break;
+        }
         if (callback) {
             callback();
         }
     }
-    function doMouseUp(evt) {
-        if (dragging) {
-            document.removeEventListener("mousemove", doMouseDrag, false);
-            document.removeEventListener("mouseup", doMouseUp, false);
-            dragging = false;
-        }
+    function moveForward() {
+        viewZ -= 1;
     }
-    function doTouchStart(evt) {
-        if (evt.touches.length != 1) {
-           doTouchCancel();
-           return;
-        }
-        evt.preventDefault();
-        var r = canvas.getBoundingClientRect();
-        prevx = evt.touches[0].clientX - r.left;
-        prevy = evt.touches[0].clientY - r.top;
-        canvas.addEventListener("touchmove", doTouchMove, false);
-        canvas.addEventListener("touchend", doTouchEnd, false);
-        canvas.addEventListener("touchcancel", doTouchCancel, false);
-        touchStarted = true;
-        centerX = canvas.width/2;
-        centerY = canvas.height/2;
-        var radius = Math.min(centerX,centerY);
-        radius2 = radius*radius;
+    function moveBackward() {
+        viewZ += 1;
     }
-    function doTouchMove(evt) {
-        if (evt.touches.length != 1 || !touchStarted) {
-           doTouchCancel();
-           return;
-        }
-        evt.preventDefault();
-        var r = canvas.getBoundingClientRect();
-        var x = evt.touches[0].clientX - r.left;
-        var y = evt.touches[0].clientY - r.top;
-        var ray1 = toRay(prevx,prevy);
-        var ray2 = toRay(x,y);
-        applyTransvection(ray1,ray2);
-        prevx = x;
-        prevy = y;
-        if (callback) {
-            callback();
-        }
+    function tiltLeft() {
+        var angle = Math.PI / 180;
+        var cos = Math.cos(angle);
+        var sin = Math.sin(angle);
+        var newx = cos * unitx[0] - sin * unitx[2];
+        var newz = sin * unitx[0] + cos * unitx[2];
+        unitx[0] = newx;
+        unitx[2] = newz;
     }
-    function doTouchEnd(evt) {
-        doTouchCancel();
-    }
-    function doTouchCancel() {
-        if (touchStarted) {
-           touchStarted = false;
-           canvas.removeEventListener("touchmove", doTouchMove, false);
-           canvas.removeEventListener("touchend", doTouchEnd, false);
-           canvas.removeEventListener("touchcancel", doTouchCancel, false);
-        }
-    }
-    function toRay(x,y) {  // converts a point (x,y) in pixel coords to a 3D ray by mapping interior of
-                           // a circle in the plane to a hemisphere with that circle as equator.
-       var dx = x - centerX;
-       var dy = centerY - y;
-       var vx = dx * unitx[0] + dy * unity[0];  // The mouse point as a vector in the image plane.
-       var vy = dx * unitx[1] + dy * unity[1];
-       var vz = dx * unitx[2] + dy * unity[2];
-       var dist2 = vx*vx + vy*vy + vz*vz;
-       if (dist2 > radius2) {  // Map a point ouside the circle to itself
-          return [vx,vy,vz];
-       }
-       else {
-          var z = Math.sqrt(radius2 - dist2);
-          return  [vx+z*unitz[0], vy+z*unitz[1], vz+z*unitz[2]];
-        }
+    function tiltRight() {
+        var angle = -Math.PI / 180;
+        var cos = Math.cos(angle);
+        var sin = Math.sin(angle);
+        var newx = cos * unitx[0] - sin * unitx[2];
+        var newz = sin * unitx[0] + cos * unitx[2];
+        unitx[0] = newx;
+        unitx[2] = newz;
     }
     function dot(v,w) {
         return v[0]*w[0] + v[1]*w[1] + v[2]*w[2];

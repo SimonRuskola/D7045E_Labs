@@ -12,7 +12,6 @@ class Mesh {
         this.vertices = vertices;
         this.indices = indices;
         this.normals = normals;
-        this.shaderProgram = shaderProgram;
         this.gl = gl;
 
         //console.log(this.normals);
@@ -56,33 +55,30 @@ class Mesh {
         this.vertexArray = this.gl.createVertexArray();
         this.gl.bindVertexArray(this.vertexArray);
         
-        
+        var a_coords = this.gl.getAttribLocation(shaderProgram, "a_coords");
+        var vNormal = this.gl.getAttribLocation(shaderProgram, "a_normal" );
+
         this.nBuffer = this.gl.createBuffer();
         this.vertexBuffer = this.gl.createBuffer();
         this.indexBuffer = gl.createBuffer();
-        
-        
-        
-        
-    }
-    activateBuffers() {
-        var a_coords = this.gl.getAttribLocation(this.shaderProgram, "a_coords");
-        var vNormal = this.gl.getAttribLocation(this.shaderProgram, "a_normal" );
+
 
         this.gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
         this.gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(this.indices), gl.STATIC_DRAW);
         
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, flatten(this.vertices), this.gl.STATIC_DRAW);
-        
         this.gl.vertexAttribPointer(a_coords, 4, this.gl.FLOAT, false, 0, 0 );
         this.gl.enableVertexAttribArray(a_coords);
         
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.nBuffer);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, flatten(this.normals), this.gl.STATIC_DRAW);
-
         this.gl.vertexAttribPointer(vNormal, 4, this.gl.FLOAT, false, 0, 0 );
         this.gl.enableVertexAttribArray(vNormal);
+        
+        
+
+        
     }
 
     getVertices() {

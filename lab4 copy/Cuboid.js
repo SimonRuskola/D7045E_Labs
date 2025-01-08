@@ -36,8 +36,7 @@ class Cuboid extends Mesh {
             0, 1, 5
         ];
 
-        const normals = calculateNormals(vertices, indices);
-       /*  const normals = [
+        const normals = [
             vec4(0, 0, 1, 0), vec4(0, 0, 1, 0),
             vec4(0, 0, 1, 0), vec4(0, 0, 1, 0),
             vec4(0, 0, -1, 0), vec4(0, 0, -1, 0),
@@ -50,7 +49,7 @@ class Cuboid extends Mesh {
             vec4(0, 1, 0, 0), vec4(0, 1, 0, 0),
             vec4(0, -1, 0, 0), vec4(0, -1, 0, 0),
             vec4(0, -1, 0, 0), vec4(0, -1, 0, 0)
-        ];  */
+        ]; 
 
         //const cubeModel = cube(1);
 
@@ -67,27 +66,4 @@ class Cuboid extends Mesh {
         this.height = height;
         this.depth = depth;
     }
-
-
-    
-}
-
-function calculateNormals(vertices, indices) {
-	let normals = [];
-	for (let i = 0; i < vertices.length; i++) {
-		normals.push(vec3());
-	}
-	for (let i = 0; i < indices.length; i += 3) {
-		let v1 = vertices[indices[i]];
-		let v2 = vertices[indices[i + 1]];
-		let v3 = vertices[indices[i + 2]];
-		let normal = cross(subtract(v2, v1), subtract(v3, v1));
-		normal = normalize(normal);
-
-		normals[indices[i]] = add(normals[indices[i]], normal);
-		normals[indices[i + 1]] = add(normals[indices[i + 1]], normal);
-		normals[indices[i + 2]] = add(normals[indices[i + 2]], normal);
-	}
-
-	return normals;
 }
